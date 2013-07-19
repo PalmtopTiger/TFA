@@ -152,7 +152,7 @@ void WavReader::open(const QString &fileName)
     char* byte1 = byte0 + 1;
     char* byte2 = byte0 + 2;
     char* byte3 = byte0 + 3;
-    const char sign_bit = 0b10000000, max_char = 0b11111111;
+    const char signBit = 0b10000000, maxChar = 0b11111111;
     switch (this->_format.bitsPerSample)
     {
     case 32:
@@ -176,9 +176,9 @@ void WavReader::open(const QString &fileName)
             *byte1 = it->at(i + 1);
             *byte2 = it->at(i + 2);
 
-            if (*byte2 & sign_bit)
+            if (*byte2 & signBit)
             {
-                *byte3 = max_char;
+                *byte3 = maxChar;
             }
             else
             {
@@ -196,9 +196,9 @@ void WavReader::open(const QString &fileName)
             *byte0 = it->at(i);
             *byte1 = it->at(i + 1);
 
-            if (*byte1 & sign_bit)
+            if (*byte1 & signBit)
             {
-                *byte2 = *byte3 = max_char;
+                *byte2 = *byte3 = maxChar;
             }
             else
             {

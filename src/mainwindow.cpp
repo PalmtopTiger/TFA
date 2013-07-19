@@ -10,8 +10,6 @@
 #include <QDateTime>
 #include <qmath.h>
 
-#include <QTextStream>
-
 void GetFirstChannel(WavReader::SamplesVector& samples, size_t numChannels);
 QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
