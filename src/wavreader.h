@@ -30,7 +30,7 @@ struct FormatSubChunk
 };
 #pragma pack (pop)
 
-typedef QVector<quint16> SamplesVector;
+typedef QVector<qint32> SamplesVector;
 
 const char RIFF_ID[] = "RIFF";
 const char WAVE[] = "WAVE";

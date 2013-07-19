@@ -10,7 +10,9 @@
 #include <QDateTime>
 #include <qmath.h>
 
-void StereoToMono(WavReader::SamplesVector &samples);
+#include <QTextStream>
+
+void GetFirstChannel(WavReader::SamplesVector& samples, size_t numChannels);
 QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
@@ -105,18 +107,13 @@ void MainWindow::openFile(const QString &fileName)
 void MainWindow::saveFile(const QString &fileName)
 {
     WavReader::SamplesVector samples = _reader.samples();
-    if (2 == _reader.format().numChannels)
+    if (_reader.format().numChannels > 1)
     {
-        StereoToMono(samples);
-    }
-    else if  (1 != _reader.format().numChannels)
-    {
-        QMessageBox::critical(this, "Ошибка", "Программа поддерживает только 1 и 2-канальные WAV.");
-        return;
+        GetFirstChannel(samples, _reader.format().numChannels);
     }
 
     const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
-    const quint16 threshold = qFloor(SHRT_MAX * ui->spinThreshold->value() * 0.01);
+    const qint32 threshold = qFloor(INT_MAX * ui->spinThreshold->value() * 0.01);
     const int trustInterval = qRound(ui->spinTrustInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;
@@ -126,7 +123,7 @@ void MainWindow::saveFile(const QString &fileName)
     SrtWriter::SrtWriter writer;
     for (size_t i = 0, len = samples.size(); i < len; ++i)
     {
-        if (samples.at(i) >= threshold)
+        if (qAbs(samples.at(i)) >= threshold)
         {
             lastSeenTime = qRound(i / samplesInMsec);
             countdown = trustInterval;
@@ -169,14 +166,13 @@ void MainWindow::saveFile(const QString &fileName)
 }
 
 
-void StereoToMono(WavReader::SamplesVector& samples)
+void GetFirstChannel(WavReader::SamplesVector& samples, size_t numChannels)
 {
-    for (size_t i = 0, j = 0, len = samples.size(); i < len; i += 2, ++j)
+    for (size_t i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
     {
-        // Опасно
-        samples[j] = qMax(samples[i], samples[i + 1]);
+        samples[j] = samples[i];
     }
-    samples.resize(samples.size() / 2);
+    samples.resize(samples.size() / numChannels);
 }
 
 QString UrlToPath(const QUrl &url)

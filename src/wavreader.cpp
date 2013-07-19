@@ -147,38 +147,87 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    if (16 == this->_format.bitsPerSample)
+    qint32 sample;
+    char* byte0 = (char*)&sample;
+    char* byte1 = byte0 + 1;
+    char* byte2 = byte0 + 2;
+    char* byte3 = byte0 + 3;
+    const char sign_bit = 0b10000000, max_char = 0b11111111;
+    switch (this->_format.bitsPerSample)
     {
-        this->_samples.resize(it->size() / sizeof(quint16));
-
-        qint16 tempShort;
-        char* byte1 = (char*)&tempShort;
-        char* byte2 = byte1 + 1;
-        for (size_t i = 0, j = 0, len = it->size(); i < len; i += sizeof(quint16), ++j)
+    case 32:
+        this->_samples.resize(it->size() / 4);
+        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 4, ++j)
         {
-            *byte1 = it->at(i);
-            *byte2 = it->at(i + 1);
-            this->_samples[j] = qAbs(tempShort);
-        }
-    }
-    else if (8 == this->_format.bitsPerSample)
-    {
-        this->_samples.resize(it->size());
+            *byte0 = it->at(i);
+            *byte1 = it->at(i + 1);
+            *byte2 = it->at(i + 2);
+            *byte3 = it->at(i + 3);
 
-        qint16 tempShort;
+            this->_samples[j] = sample;
+        }
+        break;
+
+    case 24:
+        this->_samples.resize(it->size() / 3);
+        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 3, ++j)
+        {
+            *byte0 = it->at(i);
+            *byte1 = it->at(i + 1);
+            *byte2 = it->at(i + 2);
+
+            if (*byte2 & sign_bit)
+            {
+                *byte3 = max_char;
+            }
+            else
+            {
+                *byte3 = 0;
+            }
+
+            this->_samples[j] = sample << 8; // Приводим к 32 битам
+        }
+        break;
+
+    case 16:
+        this->_samples.resize(it->size() / 2);
+        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 2, ++j)
+        {
+            *byte0 = it->at(i);
+            *byte1 = it->at(i + 1);
+
+            if (*byte1 & sign_bit)
+            {
+                *byte2 = *byte3 = max_char;
+            }
+            else
+            {
+                *byte2 = *byte3 = 0;
+            }
+
+            this->_samples[j] = sample << 16; // Приводим к 32 битам
+        }
+        break;
+
+    case 8:
+        this->_samples.resize(it->size());
         for (size_t i = 0, len = it->size(); i < len; ++i)
         {
-            tempShort = static_cast<uchar>(it->at(i));
-            this->_samples[i] = qAbs(tempShort - 128) << 8;
+            *byte0 = it->at(i);
+            *byte1 = *byte2 = *byte3 = 0;
+
+            sample -= 128; // Центрируем
+
+            this->_samples[i] = sample << 24; // Приводим к 32 битам
         }
-    }
-    else
-    {
-        QMessageBox::critical(NULL, "Ошибка", "Программа поддерживает только 8 и 16-бититные WAV.");
+        break;
+
+    default:
+        QMessageBox::critical(NULL, "Ошибка", "Программа поддерживает только целочисленные WAV.");
         return;
     }
 
-this->_hasErrors = false;
+    this->_hasErrors = false;
 }
 
 bool WavReader::hasErrors()
