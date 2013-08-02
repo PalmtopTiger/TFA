@@ -110,8 +110,14 @@ void MainWindow::saveFile(const QString &fileName)
         GetFirstChannel(samples, _reader.format().numChannels);
     }
 
+    qint32 maxVol = 0;
+    foreach (qint32 s, samples)
+    {
+        maxVol = qMax(maxVol, qAbs(s));
+    }
+
     const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
-    const qint32 threshold = qFloor(INT_MAX * ui->spinThreshold->value() * 0.01);
+    const qint32 threshold = qFloor(maxVol * ui->spinThreshold->value() * 0.01);
     const int trustInterval = qRound(ui->spinTrustInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;

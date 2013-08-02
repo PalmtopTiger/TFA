@@ -6,26 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>227</width>
-    <height>219</height>
+    <width>300</width>
+    <height>250</height>
    </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
-    <width>227</width>
-    <height>219</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>227</width>
-    <height>219</height>
+    <width>300</width>
+    <height>250</height>
    </size>
   </property>
   <property name="acceptDrops">
@@ -38,105 +26,110 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTextEdit" name="edInfo">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>205</width>
-        <height>90</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>205</width>
-        <height>90</height>
-       </size>
-      </property>
       <property name="readOnly">
        <bool>true</bool>
       </property>
      </widget>
     </item>
     <item>
-     <layout class="QFormLayout" name="formLayout">
-      <property name="fieldGrowthPolicy">
-       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-      </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_1">
-        <property name="text">
-         <string>Порог амплитуды</string>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-       </widget>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>Доверительный интервал</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QSpinBox" name="spinTrustInterval">
-        <property name="toolTip">
-         <string>Промежуток времени, в течение которого падение амплитуды ниже порога не считается окончанием фразы, если за этот промежуток амплитуда снова возрастёт</string>
-        </property>
-        <property name="suffix">
-         <string>мс</string>
-        </property>
-        <property name="maximum">
-         <number>60000</number>
-        </property>
-        <property name="value">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Мин. длительность фразы</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QSpinBox" name="spinMinLength">
-        <property name="toolTip">
-         <string>Промежуток времени, в течение которого возрастание амплитуды выше порога не считается началом фразы, если за этот промежуток амплитуда снова упадёт</string>
-        </property>
-        <property name="suffix">
-         <string>мс</string>
-        </property>
-        <property name="maximum">
-         <number>60000</number>
-        </property>
-        <property name="value">
-         <number>50</number>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QDoubleSpinBox" name="spinThreshold">
-        <property name="toolTip">
-         <string>Порог громкости, ниже которого аудиоданные считаются тишиной</string>
-        </property>
-        <property name="suffix">
-         <string>%</string>
-        </property>
-        <property name="maximum">
-         <double>100.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>0.100000000000000</double>
-        </property>
-        <property name="value">
-         <double>0.500000000000000</double>
-        </property>
-       </widget>
+      <item>
+       <layout class="QFormLayout" name="formLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_1">
+          <property name="text">
+           <string>Порог амплитуды</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QDoubleSpinBox" name="spinThreshold">
+          <property name="toolTip">
+           <string>Порог громкости, ниже которого аудиоданные считаются тишиной</string>
+          </property>
+          <property name="suffix">
+           <string>%</string>
+          </property>
+          <property name="maximum">
+           <double>100.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>1.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>10.000000000000000</double>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Доверительный интервал</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="spinTrustInterval">
+          <property name="toolTip">
+           <string>Промежуток времени, в течение которого падение амплитуды ниже порога не считается окончанием фразы, если за этот промежуток амплитуда снова возрастёт</string>
+          </property>
+          <property name="suffix">
+           <string>мс</string>
+          </property>
+          <property name="maximum">
+           <number>60000</number>
+          </property>
+          <property name="value">
+           <number>50</number>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Мин. длительность фразы</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QSpinBox" name="spinMinLength">
+          <property name="toolTip">
+           <string>Промежуток времени, в течение которого возрастание амплитуды выше порога не считается началом фразы, если за этот промежуток амплитуда снова упадёт</string>
+          </property>
+          <property name="suffix">
+           <string>мс</string>
+          </property>
+          <property name="maximum">
+           <number>60000</number>
+          </property>
+          <property name="value">
+           <number>50</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
