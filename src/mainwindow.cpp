@@ -91,7 +91,14 @@ void MainWindow::openFile(const QString &fileName)
 
     QDateTime dt;
     dt.setTime_t(_reader.samples().size() / _reader.format().sampleRate / _reader.format().numChannels + 61200);
-    ui->edInfo->setHtml(QString("<b>Формат:</b> %1<br/><b>Продолжительность:</b> %2<br/><b>Битрейт:</b> %3 Кбит/сек<br/><b>Каналы:</b> %4<br/><b>Частота:</b> %5 КГц<br/><b>Битовая глубина:</b> %6 бит")
+    ui->edInfo->setHtml(QString("<b>Имя файла:</b> %1<br/>"
+                                "<b>Формат:</b> %2<br/>"
+                                "<b>Продолжительность:</b> %3<br/>"
+                                "<b>Битрейт:</b> %4 Кбит/сек<br/>"
+                                "<b>Каналы:</b> %5<br/>"
+                                "<b>Частота:</b> %6 КГц<br/>"
+                                "<b>Битовая глубина:</b> %7 бит")
+                        .arg(QFileInfo(_fileName).fileName())
                         .arg(_reader.format().audioFormat == 1 ? QString("PCM") : QString("неизвестен"))
                         .arg(dt.toString("HH:mm:ss"))
                         .arg(_reader.format().byteRate * 0.008)
