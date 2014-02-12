@@ -41,7 +41,10 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (event->mimeData()->hasUrls())
     {
         QString path = UrlToPath(event->mimeData()->urls().first());
-        if (!path.isEmpty()) this->openFile(path);
+        if (!path.isEmpty()) {
+            this->openFile(path);
+            event->acceptProposedAction();
+        }
     }
 }
 
