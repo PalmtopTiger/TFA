@@ -5,7 +5,6 @@
 #include <QDesktopWidget>
 #include <QDragEnterEvent>
 #include <QUrl>
-#include <QSettings>
 #include <QFileDialog>
 #include <QDateTime>
 #include <qmath.h>
@@ -15,6 +14,9 @@ QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
 const QString DEFAULT_DIR_KEY = "DefaultDir";
+const QString THRESHOLD_KEY = "Threshold";
+const QString MIN_INTERVAL_KEY = "MinInterval";
+const QString MIN_LENGTH_KEY = "MinLength";
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -23,11 +25,19 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->spinThreshold->setValue(_settings.value(THRESHOLD_KEY, ui->spinThreshold->value()).toDouble());
+    ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
+    ui->spinMinLength->setValue(_settings.value(MIN_LENGTH_KEY, ui->spinMinLength->value()).toInt());
+
     this->move(QApplication::desktop()->screenGeometry().center() - this->rect().center());
 }
 
 MainWindow::~MainWindow()
 {
+    _settings.setValue(THRESHOLD_KEY, ui->spinThreshold->value());
+    _settings.setValue(MIN_INTERVAL_KEY, ui->spinMinInterval->value());
+    _settings.setValue(MIN_LENGTH_KEY, ui->spinMinLength->value());
+
     delete ui;
 }
 
@@ -51,33 +61,28 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::on_btOpen_clicked()
 {
-    QSettings settings;
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     "Выберите аудио",
-                                                    settings.value(DEFAULT_DIR_KEY).toString(),
+                                                    _settings.value(DEFAULT_DIR_KEY).toString(),
                                                     "Microsoft WAV (*.wav)");
+    if (fileName.isEmpty()) return;
 
-    if (!fileName.isEmpty())
-    {
-        settings.setValue(DEFAULT_DIR_KEY, QFileInfo(fileName).absolutePath());
-        this->openFile(fileName);
-    }
+    _settings.setValue(DEFAULT_DIR_KEY, QFileInfo(fileName).absolutePath());
+    this->openFile(fileName);
 }
 
 void MainWindow::on_btSave_clicked()
 {
     if (_reader.hasErrors()) return;
 
-    QString fileName = _fileName.replace(QRegExp("\\.[^.]*$"), "").append(".srt");
-    fileName = QFileDialog::getSaveFileName(this,
+    QFileInfo fileInfo(_fileName);
+    QString fileName = QFileDialog::getSaveFileName(this,
                                             "Выберите выходной файл",
-                                            fileName,
+                                            fileInfo.absoluteDir().filePath(fileInfo.completeBaseName() + ".srt"),
                                             "SubRip (*.srt)");
+    if (fileName.isEmpty()) return;
 
-    if (!fileName.isEmpty())
-    {
-        this->saveFile(fileName);
-    }
+    this->saveFile(fileName);
 }
 
 void MainWindow::openFile(const QString &fileName)
@@ -101,7 +106,7 @@ void MainWindow::openFile(const QString &fileName)
                                 "<b>Каналы:</b> %5<br/>"
                                 "<b>Частота:</b> %6 КГц<br/>"
                                 "<b>Битовая глубина:</b> %7 бит")
-                        .arg(QFileInfo(_fileName).fileName())
+                        .arg(QFileInfo(fileName).fileName())
                         .arg(_reader.format().audioFormat == 1 ? QString("PCM") : QString("неизвестен"))
                         .arg(dt.toString("HH:mm:ss"))
                         .arg(_reader.format().byteRate * 0.008)
@@ -128,10 +133,10 @@ void MainWindow::saveFile(const QString &fileName)
 
     const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
     const qint32 threshold = qFloor(maxVol * ui->spinThreshold->value() * 0.01);
-    const int trustInterval = qRound(ui->spinTrustInterval->value() * samplesInMsec);
+    const int minInterval = qRound(ui->spinMinInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;
-    int countdown = trustInterval;
+    int countdown = minInterval;
     size_t lastSeenTime = 0, num = 1;
     SrtWriter::Phrase phrase;
     SrtWriter::SrtWriter writer;
@@ -140,7 +145,7 @@ void MainWindow::saveFile(const QString &fileName)
         if (qAbs(samples.at(i)) >= threshold)
         {
             lastSeenTime = qRound(i / samplesInMsec);
-            countdown = trustInterval;
+            countdown = minInterval;
 
             if (!inPhrase)
             {

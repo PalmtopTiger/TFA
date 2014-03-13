@@ -3,6 +3,7 @@
 
 #include "wavreader.h"
 #include <QMainWindow>
+#include <QSettings>
 
 namespace Ui {
 class MainWindow;
@@ -22,6 +23,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QSettings _settings;
     QString _fileName;
     WavReader::WavReader _reader;
 
