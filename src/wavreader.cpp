@@ -4,6 +4,7 @@
 #include <QDataStream>
 #include <QMap>
 #include <QByteArray>
+#include <cstring>
 
 namespace WavReader
 {
@@ -21,7 +22,7 @@ void WavReader::clear()
 {
     this->_hasErrors = true;
 
-    qMemSet(&this->_format, 0, sizeof(FormatSubChunk));
+    std::memset(&this->_format, 0, sizeof(FormatSubChunk));
     this->_samples.clear();
 }
 
@@ -87,7 +88,7 @@ void WavReader::open(const QString &fileName)
             return;
         }
 
-        qMemCopy(temp, subheader.ID, sizeof(subheader.ID));
+        std::memcpy(temp, subheader.ID, sizeof(subheader.ID));
         key = temp;
 
         it = subchunks.find(key);
@@ -126,7 +127,7 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    qMemCopy(&(this->_format), it->data(), sizeof(FormatSubChunk));
+    std::memcpy(&(this->_format), it->data(), sizeof(FormatSubChunk));
 
     if (1 != this->_format.audioFormat)
     {

@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QDesktopWidget>
 #include <QDragEnterEvent>
+#include <QMimeData>
 #include <QUrl>
 #include <QFileDialog>
 #include <QDateTime>
