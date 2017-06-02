@@ -4,25 +4,25 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
-TARGET = TFA
 TEMPLATE = app
 
+QT += core gui widgets
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
+SOURCES += \
+    main.cpp \
+    mainwindow.cpp \
     wavreader.cpp \
     srtwriter.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS += \
+    mainwindow.h \
     wavreader.h \
     srtwriter.h
 
-FORMS    += mainwindow.ui
+FORMS += mainwindow.ui
 
 RESOURCES += TFA.qrc
 
 RC_FILE = TFA.rc
+
+TARGET = TFA
