@@ -23,7 +23,7 @@ void SrtWriter::save(const QString& fileName)
     QFile fout(fileName);
     if (!fout.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        QMessageBox::critical(NULL, "Ошибка", "Не могу открыть файл для записи.");
+        QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для записи.");
         return;
     }
     QTextStream out(&fout);

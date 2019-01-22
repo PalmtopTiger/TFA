@@ -34,12 +34,12 @@ void WavReader::open(const QString &fileName)
     QFile fin(fileName);
     if (!fin.open(QIODevice::ReadOnly))
     {
-        QMessageBox::critical(NULL, "Ошибка", "Не могу открыть файл для чтения.");
+        QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для чтения.");
         return;
     }
     if (static_cast<size_t>(fin.size()) < (sizeof(ChunkHeader) + sizeof(FormatSubChunk) + sizeof(SubChunkHeader) * 2))
     {
-        QMessageBox::critical(NULL, "Ошибка", "Файл подозрительно мал.");
+        QMessageBox::critical(nullptr, "Ошибка", "Файл подозрительно мал.");
         fin.close();
         return;
     }
@@ -47,28 +47,28 @@ void WavReader::open(const QString &fileName)
 
     // Чтение заголовка первого чанка
     ChunkHeader header;
-    if (in.readRawData((char*)&header, sizeof(ChunkHeader)) < 0)
+    if (in.readRawData(reinterpret_cast<char*>(&header), sizeof(ChunkHeader)) < 0)
     {
-        QMessageBox::critical(NULL, "Ошибка", "Ошибка чтения.");
+        QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
         fin.close();
         return;
     }
 
-    if (qstrncmp((const char*)&header.ID, RIFF_ID, sizeof(header.ID)) != 0)
+    if (qstrncmp(header.ID, RIFF_ID, sizeof(header.ID)) != 0)
     {
-        QMessageBox::critical(NULL, "Ошибка", "Не найден заголовок RIFF.");
+        QMessageBox::critical(nullptr, "Ошибка", "Не найден заголовок RIFF.");
         fin.close();
         return;
     }
     if (static_cast<size_t>(fin.size()) < (sizeof(SubChunkHeader) + header.size))
     {
-        QMessageBox::critical(NULL, "Ошибка", "Реальный размер файла меньше, чем указанный в заголовке.");
+        QMessageBox::critical(nullptr, "Ошибка", "Реальный размер файла меньше, чем указанный в заголовке.");
         fin.close();
         return;
     }
-    if (qstrncmp((const char*)&header.format, WAVE, sizeof(header.format)) != 0)
+    if (qstrncmp(header.format, WAVE, sizeof(header.format)) != 0)
     {
-        QMessageBox::critical(NULL, "Ошибка", "Файл RIFF не является файлом WAV.");
+        QMessageBox::critical(nullptr, "Ошибка", "Файл RIFF не является файлом WAV.");
         fin.close();
         return;
     }
@@ -81,9 +81,9 @@ void WavReader::open(const QString &fileName)
     QString key;
     while(!in.atEnd())
     {
-        if (in.readRawData((char*)&subheader, sizeof(SubChunkHeader)) < 0)
+        if (in.readRawData(reinterpret_cast<char*>(&subheader), sizeof(SubChunkHeader)) < 0)
         {
-            QMessageBox::critical(NULL, "Ошибка", "Ошибка чтения.");
+            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
             fin.close();
             return;
         }
@@ -98,14 +98,14 @@ void WavReader::open(const QString &fileName)
         }
         else
         {
-            QMessageBox::warning(NULL, "Ошибка", "Повторяющаяся структура: \"" + key + "\"");
+            QMessageBox::warning(nullptr, "Ошибка", "Повторяющаяся структура: \"" + key + "\"");
         }
 
-        it->resize(subheader.size);
+        it->resize(static_cast<int>(subheader.size));
 
-        if (in.readRawData(it->data(), subheader.size) < 0)
+        if (in.readRawData(it->data(), static_cast<int>(subheader.size)) < 0)
         {
-            QMessageBox::critical(NULL, "Ошибка", "Ошибка чтения.");
+            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
             fin.close();
             return;
         }
@@ -118,12 +118,12 @@ void WavReader::open(const QString &fileName)
     it = subchunks.find(FORMAT_ID);
     if (it == subchunks.end())
     {
-        QMessageBox::critical(NULL, "Ошибка", "Секция FORMAT не найдена.");
+        QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT не найдена.");
         return;
     }
     if (static_cast<size_t>(it->size()) < sizeof(FormatSubChunk))
     {
-        QMessageBox::critical(NULL, "Ошибка", "Секция FORMAT неверного размера.");
+        QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT неверного размера.");
         return;
     }
 
@@ -131,7 +131,7 @@ void WavReader::open(const QString &fileName)
 
     if (1 != this->_format.audioFormat)
     {
-        QMessageBox::critical(NULL, "Ошибка", "Программа поддерживает только несжатые WAV.");
+        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только несжатые WAV.");
         return;
     }
 
@@ -139,26 +139,26 @@ void WavReader::open(const QString &fileName)
     it = subchunks.find(DATA_ID);
     if (it == subchunks.end())
     {
-        QMessageBox::critical(NULL, "Ошибка", "Секция DATA не найдена.");
+        QMessageBox::critical(nullptr, "Ошибка", "Секция DATA не найдена.");
         return;
     }
     if (it->size() < 1)
     {
-        QMessageBox::critical(NULL, "Ошибка", "Секция DATA пуста.");
+        QMessageBox::critical(nullptr, "Ошибка", "Секция DATA пуста.");
         return;
     }
 
     qint32 sample;
-    char* byte0 = (char*)&sample;
+    char* byte0 = reinterpret_cast<char*>(&sample);
     char* byte1 = byte0 + 1;
     char* byte2 = byte0 + 2;
     char* byte3 = byte0 + 3;
-    const char signBit = 0b10000000, maxChar = 0b11111111;
+    const char signBit = static_cast<char>(0b10000000), maxChar = static_cast<char>(0b11111111);
     switch (this->_format.bitsPerSample)
     {
     case 32:
         this->_samples.resize(it->size() / 4);
-        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 4, ++j)
+        for (int i = 0, j = 0, len = it->size(); i < len; i += 4, ++j)
         {
             *byte0 = it->at(i);
             *byte1 = it->at(i + 1);
@@ -171,7 +171,7 @@ void WavReader::open(const QString &fileName)
 
     case 24:
         this->_samples.resize(it->size() / 3);
-        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 3, ++j)
+        for (int i = 0, j = 0, len = it->size(); i < len; i += 3, ++j)
         {
             *byte0 = it->at(i);
             *byte1 = it->at(i + 1);
@@ -192,7 +192,7 @@ void WavReader::open(const QString &fileName)
 
     case 16:
         this->_samples.resize(it->size() / 2);
-        for (size_t i = 0, j = 0, len = it->size(); i < len; i += 2, ++j)
+        for (int i = 0, j = 0, len = it->size(); i < len; i += 2, ++j)
         {
             *byte0 = it->at(i);
             *byte1 = it->at(i + 1);
@@ -212,7 +212,7 @@ void WavReader::open(const QString &fileName)
 
     case 8:
         this->_samples.resize(it->size());
-        for (size_t i = 0, len = it->size(); i < len; ++i)
+        for (int i = 0, len = it->size(); i < len; ++i)
         {
             *byte0 = it->at(i);
             *byte1 = *byte2 = *byte3 = 0;
@@ -224,7 +224,7 @@ void WavReader::open(const QString &fileName)
         break;
 
     default:
-        QMessageBox::critical(NULL, "Ошибка", "Программа поддерживает только целочисленные WAV.");
+        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только целочисленные WAV.");
         return;
     }
 

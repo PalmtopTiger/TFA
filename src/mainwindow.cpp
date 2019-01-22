@@ -10,7 +10,7 @@
 #include <QDateTime>
 #include <qmath.h>
 
-void GetFirstChannel(WavReader::SamplesVector& samples, size_t numChannels);
+void GetFirstChannel(WavReader::SamplesVector& samples, int numChannels);
 QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
@@ -99,7 +99,7 @@ void MainWindow::openFile(const QString &fileName)
     _fileName = fileName;
 
     QDateTime dt;
-    dt.setTime_t(_reader.samples().size() / _reader.format().sampleRate / _reader.format().numChannels + 61200);
+    dt.setTime_t(static_cast<uint>(_reader.samples().size()) / _reader.format().sampleRate / _reader.format().numChannels + 61200u);
     ui->edInfo->setHtml(QString("<b>Имя файла:</b> %1<br/>"
                                 "<b>Формат:</b> %2<br/>"
                                 "<b>Продолжительность:</b> %3<br/>"
@@ -138,14 +138,14 @@ void MainWindow::saveFile(const QString &fileName)
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;
     int countdown = minInterval;
-    size_t lastSeenTime = 0, num = 1;
+    uint lastSeenTime = 0, num = 1;
     SrtWriter::Phrase phrase;
     SrtWriter::SrtWriter writer;
-    for (size_t i = 0, len = samples.size(); i < len; ++i)
+    for (int i = 0, len = samples.size(); i < len; ++i)
     {
         if (qAbs(samples.at(i)) >= threshold)
         {
-            lastSeenTime = qRound(i / samplesInMsec);
+            lastSeenTime = static_cast<uint>(qRound(i / samplesInMsec));
             countdown = minInterval;
 
             if (!inPhrase)
@@ -186,9 +186,9 @@ void MainWindow::saveFile(const QString &fileName)
 }
 
 
-void GetFirstChannel(WavReader::SamplesVector& samples, size_t numChannels)
+void GetFirstChannel(WavReader::SamplesVector& samples, int numChannels)
 {
-    for (size_t i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
+    for (int i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
     {
         samples[j] = samples[i];
     }
