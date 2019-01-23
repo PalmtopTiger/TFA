@@ -153,7 +153,8 @@ void WavReader::open(const QString &fileName)
     char* byte1 = byte0 + 1;
     char* byte2 = byte0 + 2;
     char* byte3 = byte0 + 3;
-    const char signBit = static_cast<char>(0b10000000), maxChar = static_cast<char>(0b11111111);
+    const char signBit = '\x80'; // 0b10000000
+    const char maxChar = '\xFF'; // 0b11111111
     switch (this->_format.bitsPerSample)
     {
     case 32:
