@@ -9,7 +9,7 @@
 #include <QDateTime>
 #include <qmath.h>
 
-void GetFirstChannel(WavReader::SamplesVector& samples, int numChannels);
+void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
 QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
@@ -61,10 +61,10 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::on_btOpen_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this,
-                                                    "Выберите аудио",
-                                                    _settings.value(DEFAULT_DIR_KEY).toString(),
-                                                    "Microsoft WAV (*.wav)");
+    const QString fileName = QFileDialog::getOpenFileName(this,
+                                                          "Выберите аудио",
+                                                          _settings.value(DEFAULT_DIR_KEY).toString(),
+                                                          "Microsoft WAV (*.wav)");
     if (fileName.isEmpty()) return;
 
     _settings.setValue(DEFAULT_DIR_KEY, QFileInfo(fileName).absolutePath());
@@ -75,11 +75,11 @@ void MainWindow::on_btSave_clicked()
 {
     if (_reader.hasErrors()) return;
 
-    QFileInfo fileInfo(_fileName);
-    QString fileName = QFileDialog::getSaveFileName(this,
-                                            "Выберите выходной файл",
-                                            fileInfo.absoluteDir().filePath(fileInfo.completeBaseName() + ".srt"),
-                                            "SubRip (*.srt)");
+    const QFileInfo fileInfo(_fileName);
+    const QString fileName = QFileDialog::getSaveFileName(this,
+                                                          "Выберите выходной файл",
+                                                          fileInfo.absoluteDir().filePath(fileInfo.completeBaseName() + ".srt"),
+                                                          "SubRip (*.srt)");
     if (fileName.isEmpty()) return;
 
     this->saveFile(fileName);
@@ -126,7 +126,7 @@ void MainWindow::saveFile(const QString &fileName)
     }
 
     qint32 maxVol = 0;
-    foreach (qint32 s, samples)
+    for (const qint32 s : qAsConst(samples))
     {
         maxVol = qMax(maxVol, qAbs(s));
     }
@@ -185,7 +185,7 @@ void MainWindow::saveFile(const QString &fileName)
 }
 
 
-void GetFirstChannel(WavReader::SamplesVector& samples, int numChannels)
+void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels)
 {
     for (int i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
     {
@@ -196,7 +196,7 @@ void GetFirstChannel(WavReader::SamplesVector& samples, int numChannels)
 
 QString UrlToPath(const QUrl &url)
 {
-    QString path = url.toLocalFile();
+    const QString path = url.toLocalFile();
 
     if (!path.isEmpty() && QFileInfo(path).suffix().toLower() == "wav")
     {

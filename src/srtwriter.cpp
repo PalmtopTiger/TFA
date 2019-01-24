@@ -30,9 +30,8 @@ void SrtWriter::save(const QString& fileName)
     out.setCodec("UTF-8");
     out.setGenerateByteOrderMark(true);
 
-    PhraseList::const_iterator it;
     uint num = 1;
-    foreach (const Phrase& p, _phrases)
+    for (const Phrase& p : qAsConst(_phrases))
     {
         out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first)).arg(ToTimestamp(p.time.second)).arg(p.text);
         ++num;

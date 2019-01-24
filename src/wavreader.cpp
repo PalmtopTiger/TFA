@@ -112,8 +112,6 @@ void WavReader::open(const QString &fileName)
     }
     fin.close();
 
-    //return;
-
     // Разбор секции FORMAT
     it = subchunks.find(FORMAT_ID);
     if (it == subchunks.end())
