@@ -197,12 +197,11 @@ void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels)
 
 QString UrlToPath(const QUrl &url)
 {
-    const QString path = url.toLocalFile();
-
-    if (!path.isEmpty() && QFileInfo(path).suffix().toLower() == "wav")
-    {
-        return path;
+    if (url.isLocalFile()) {
+        const QString path = url.toLocalFile();
+        if (QFileInfo(path).suffix().toLower() == "wav") {
+            return path;
+        }
     }
-
     return QString::null;
 }
