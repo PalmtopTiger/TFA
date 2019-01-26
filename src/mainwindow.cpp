@@ -78,10 +78,9 @@ void MainWindow::on_btSave_clicked()
 {
     if (_reader.hasErrors()) return;
 
-    const QFileInfo fileInfo(_fileName);
     const QString fileName = QFileDialog::getSaveFileName(this,
                                                           "Выберите выходной файл",
-                                                          fileInfo.absoluteDir().filePath(fileInfo.completeBaseName() + ".srt"),
+                                                          _fileInfo.dir().filePath(_fileInfo.completeBaseName() + ".srt"),
                                                           "SubRip (*.srt)");
     if (fileName.isEmpty()) return;
 
@@ -95,10 +94,9 @@ void MainWindow::openFile(const QString &fileName)
     {
         ui->btSave->setEnabled(false);
         ui->edInfo->clear();
-        _fileName.clear();
         return;
     }
-    _fileName = fileName;
+    _fileInfo.setFile(fileName);
 
     QDateTime dt;
     dt.setTime_t(static_cast<uint>(_reader.samples().size()) / _reader.format().sampleRate / _reader.format().numChannels + 61200u);
@@ -109,7 +107,7 @@ void MainWindow::openFile(const QString &fileName)
                                 "<b>Каналы:</b> %5<br/>"
                                 "<b>Частота:</b> %6 КГц<br/>"
                                 "<b>Битовая глубина:</b> %7 бит")
-                        .arg(QFileInfo(fileName).fileName())
+                        .arg(_fileInfo.fileName())
                         .arg(_reader.format().audioFormat == 1 ? QString("PCM") : QString("неизвестен"))
                         .arg(dt.toString("HH:mm:ss"))
                         .arg(_reader.format().byteRate * 0.008)

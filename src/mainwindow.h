@@ -4,6 +4,7 @@
 #include "wavreader.h"
 #include <QMainWindow>
 #include <QSettings>
+#include <QFileInfo>
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +25,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QSettings _settings;
-    QString _fileName;
+    QFileInfo _fileInfo;
     WavReader::WavReader _reader;
 
     void dragEnterEvent(QDragEnterEvent *event);
