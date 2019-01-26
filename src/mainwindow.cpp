@@ -7,16 +7,17 @@
 #include <QUrl>
 #include <QFileDialog>
 #include <QDateTime>
+#include <QStandardItemModel>
 #include <qmath.h>
 
 void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
 QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
-const QString DEFAULT_DIR_KEY = "DefaultDir";
-const QString THRESHOLD_KEY = "Threshold";
-const QString MIN_INTERVAL_KEY = "MinInterval";
-const QString MIN_LENGTH_KEY = "MinLength";
+const QString DEFAULT_DIR_KEY  = "DefaultDir",
+              THRESHOLD_KEY    = "Threshold",
+              MIN_INTERVAL_KEY = "MinInterval",
+              MIN_LENGTH_KEY   = "MinLength";
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -24,6 +25,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QStandardItemModel* const model = new QStandardItemModel();
+    model->setVerticalHeaderLabels({
+        "Имя файла",
+        "Формат",
+        "Продолжительность",
+        "Битрейт",
+        "Каналы",
+        "Частота",
+        "Битовая глубина"
+    });
+    ui->tbInfo->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tbInfo->setModel(model);
 
     ui->spinThreshold->setValue(_settings.value(THRESHOLD_KEY, ui->spinThreshold->value()).toDouble());
     ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
@@ -89,41 +103,39 @@ void MainWindow::on_btSave_clicked()
 
 void MainWindow::openFile(const QString &fileName)
 {
+    QStandardItemModel* const model = static_cast<QStandardItemModel *>(ui->tbInfo->model());
+
     this->_reader.open(fileName);
     if (_reader.hasErrors())
     {
         ui->btSave->setEnabled(false);
-        ui->edInfo->clear();
+        model->removeColumns(0, 1);
         return;
     }
     _fileInfo.setFile(fileName);
 
+    const WavReader::FormatSubChunk& format = _reader.format();
     QDateTime dt;
-    dt.setTime_t(static_cast<uint>(_reader.samples().size()) / _reader.format().sampleRate / _reader.format().numChannels + 61200u);
-    ui->edInfo->setHtml(QString("<b>Имя файла:</b> %1<br/>"
-                                "<b>Формат:</b> %2<br/>"
-                                "<b>Продолжительность:</b> %3<br/>"
-                                "<b>Битрейт:</b> %4 Кбит/сек<br/>"
-                                "<b>Каналы:</b> %5<br/>"
-                                "<b>Частота:</b> %6 КГц<br/>"
-                                "<b>Битовая глубина:</b> %7 бит")
-                        .arg(_fileInfo.fileName())
-                        .arg(_reader.format().audioFormat == 1 ? QString("PCM") : QString("неизвестен"))
-                        .arg(dt.toString("HH:mm:ss"))
-                        .arg(_reader.format().byteRate * 0.008)
-                        .arg(_reader.format().numChannels)
-                        .arg(_reader.format().sampleRate * 0.001)
-                        .arg(_reader.format().bitsPerSample));
+    dt.setTime_t(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
+
+    model->setItem(0, new QStandardItem(_fileInfo.fileName()));
+    model->setItem(1, new QStandardItem(format.audioFormat == 1 ? "PCM" : "неизвестен"));
+    model->setItem(2, new QStandardItem(dt.toString("HH:mm:ss")));
+    model->setItem(3, new QStandardItem(QString("%1 Кбит/сек").arg(format.byteRate * 0.008)));
+    model->setItem(4, new QStandardItem(QString::number(format.numChannels)));
+    model->setItem(5, new QStandardItem(QString("%1 КГц").arg(format.sampleRate * 0.001)));
+    model->setItem(6, new QStandardItem(QString("%1 бит").arg(format.bitsPerSample)));
 
     ui->btSave->setEnabled(true);
 }
 
 void MainWindow::saveFile(const QString &fileName)
 {
+    const WavReader::FormatSubChunk& format = _reader.format();
     WavReader::SamplesVector samples = _reader.samples();
-    if (_reader.format().numChannels > 1)
+    if (format.numChannels > 1)
     {
-        GetFirstChannel(samples, _reader.format().numChannels);
+        GetFirstChannel(samples, format.numChannels);
     }
 
     qint32 maxVol = 0;
@@ -132,7 +144,7 @@ void MainWindow::saveFile(const QString &fileName)
         maxVol = qMax(maxVol, qAbs(s));
     }
 
-    const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
+    const qreal samplesInMsec = format.sampleRate * 0.001;
     const qint32 threshold = qFloor(maxVol * ui->spinThreshold->value() * 0.01);
     const int minInterval = qRound(ui->spinMinInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
