@@ -21,6 +21,9 @@ public:
 private slots:
     void on_btOpen_clicked();
     void on_btSave_clicked();
+    void on_tbInfo_customContextMenuRequested(const QPoint& pos);
+    void on_tbInfo_customHeaderContextMenuRequested(const QPoint& pos);
+    void copyInfo();
 
 private:
     Ui::MainWindow *ui;
@@ -30,6 +33,7 @@ private:
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
+    QMenu* createContextMenu();
     void openFile(const QString &fileName);
     void saveFile(const QString &fileName);
 };

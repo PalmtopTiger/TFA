@@ -8,6 +8,8 @@
 #include <QFileDialog>
 #include <QDateTime>
 #include <QStandardItemModel>
+#include <QMenu>
+#include <QClipboard>
 #include <qmath.h>
 
 void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
@@ -38,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     ui->tbInfo->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tbInfo->setModel(model);
+    ui->tbInfo->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->tbInfo->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->tbInfo->verticalHeader(), &QHeaderView::customContextMenuRequested, this, &MainWindow::on_tbInfo_customHeaderContextMenuRequested);
 
     ui->spinThreshold->setValue(_settings.value(THRESHOLD_KEY, ui->spinThreshold->value()).toDouble());
     ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
@@ -99,6 +104,39 @@ void MainWindow::on_btSave_clicked()
     if (fileName.isEmpty()) return;
 
     this->saveFile(fileName);
+}
+
+void MainWindow::on_tbInfo_customContextMenuRequested(const QPoint& pos)
+{
+    this->createContextMenu()->popup(ui->tbInfo->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::on_tbInfo_customHeaderContextMenuRequested(const QPoint& pos)
+{
+    this->createContextMenu()->popup(ui->tbInfo->verticalHeader()->viewport()->mapToGlobal(pos));
+}
+
+QMenu* MainWindow::createContextMenu()
+{
+    QMenu* const menu = new QMenu(this);
+    QAction* const actCopy = new QAction("Копировать", this);
+    connect(actCopy, &QAction::triggered, this, &MainWindow::copyInfo);
+    menu->addAction(actCopy);
+    return menu;
+}
+
+void MainWindow::copyInfo()
+{
+    const QStandardItemModel* const model = static_cast<QStandardItemModel *>(ui->tbInfo->model());
+
+    QStringList data;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        data.append(QString("%1: %2")
+                    .arg(model->verticalHeaderItem(i)->text())
+                    .arg(model->item(i)->text()));
+    }
+
+    QApplication::clipboard()->setText(data.join('\n'));
 }
 
 void MainWindow::openFile(const QString &fileName)
