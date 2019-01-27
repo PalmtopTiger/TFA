@@ -108,6 +108,7 @@ void MainWindow::openFile(const QString &fileName)
     this->_reader.open(fileName);
     if (_reader.hasErrors())
     {
+        ui->tbInfo->setEnabled(false);
         ui->btSave->setEnabled(false);
         model->removeColumns(0, 1);
         return;
@@ -126,6 +127,7 @@ void MainWindow::openFile(const QString &fileName)
     model->setItem(5, new QStandardItem(QString("%1 КГц").arg(format.sampleRate * 0.001)));
     model->setItem(6, new QStandardItem(QString("%1 бит").arg(format.bitsPerSample)));
 
+    ui->tbInfo->setEnabled(true);
     ui->btSave->setEnabled(true);
 }
 
