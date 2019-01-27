@@ -40,7 +40,6 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     ui->tbInfo->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tbInfo->setModel(model);
-    ui->tbInfo->setContextMenuPolicy(Qt::CustomContextMenu);
     ui->tbInfo->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tbInfo->verticalHeader(), &QHeaderView::customContextMenuRequested, this, &MainWindow::on_tbInfo_customHeaderContextMenuRequested);
 
