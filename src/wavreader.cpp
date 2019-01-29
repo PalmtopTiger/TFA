@@ -1,9 +1,7 @@
 #include "wavreader.h"
 #include <QMessageBox>
 #include <QFile>
-#include <QDataStream>
 #include <QMap>
-#include <QByteArray>
 #include <cstring>
 
 namespace WavReader
@@ -54,7 +52,7 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    if (qstrncmp(header.ID, RIFF_ID, sizeof(header.ID)) != 0)
+    if (ID_RIFF != header.id)
     {
         QMessageBox::critical(nullptr, "Ошибка", "Не найден заголовок RIFF.");
         fin.close();
@@ -66,7 +64,7 @@ void WavReader::open(const QString &fileName)
         fin.close();
         return;
     }
-    if (qstrncmp(header.format, WAVE, sizeof(header.format)) != 0)
+    if (FMT_WAVE != header.format)
     {
         QMessageBox::critical(nullptr, "Ошибка", "Файл RIFF не является файлом WAV.");
         fin.close();
@@ -74,11 +72,9 @@ void WavReader::open(const QString &fileName)
     }
 
     // Чтение сабчанков
-    QMap<QString, QByteArray> subchunks;
-    QMap<QString, QByteArray>::iterator it;
+    QMap<quint32, QByteArray> subchunks;
+    QMap<quint32, QByteArray>::iterator it;
     SubChunkHeader subheader;
-    char temp[sizeof(subheader.ID) + 1] = {0};
-    QString key;
     while(!in.atEnd())
     {
         if (in.readRawData(reinterpret_cast<char*>(&subheader), sizeof(SubChunkHeader)) < 0)
@@ -88,17 +84,14 @@ void WavReader::open(const QString &fileName)
             return;
         }
 
-        std::memcpy(temp, subheader.ID, sizeof(subheader.ID));
-        key = temp;
-
-        it = subchunks.find(key);
+        it = subchunks.find(subheader.id);
         if (it == subchunks.end())
         {
-            it = subchunks.insert(key, QByteArray());
+            it = subchunks.insert(subheader.id, QByteArray());
         }
         else
         {
-            QMessageBox::warning(nullptr, "Ошибка", "Повторяющаяся структура: \"" + key + "\"");
+            QMessageBox::warning(nullptr, "Ошибка", QString("Повторяющаяся структура: %1").arg(subheader.id, 0, 16));
         }
 
         it->resize(static_cast<int>(subheader.size));
@@ -113,7 +106,7 @@ void WavReader::open(const QString &fileName)
     fin.close();
 
     // Разбор секции FORMAT
-    it = subchunks.find(FORMAT_ID);
+    it = subchunks.find(ID_FORMAT);
     if (it == subchunks.end())
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT не найдена.");
@@ -134,7 +127,7 @@ void WavReader::open(const QString &fileName)
     }
 
     // Разбор секции DATA
-    it = subchunks.find(DATA_ID);
+    it = subchunks.find(ID_DATA);
     if (it == subchunks.end())
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция DATA не найдена.");

@@ -2,9 +2,7 @@
 #include "ui_mainwindow.h"
 #include "srtwriter.h"
 #include <QDesktopWidget>
-#include <QDragEnterEvent>
 #include <QMimeData>
-#include <QUrl>
 #include <QFileDialog>
 #include <QDateTime>
 #include <QStandardItemModel>
@@ -13,7 +11,6 @@
 #include <qmath.h>
 
 void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
-QString ToTimestamp(const uint utime);
 QString UrlToPath(const QUrl &url);
 
 const QString DEFAULT_DIR_KEY  = "DefaultDir",

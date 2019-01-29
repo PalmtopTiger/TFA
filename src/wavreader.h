@@ -1,7 +1,6 @@
 #ifndef WAVREADER_H
 #define WAVREADER_H
 
-#include <QString>
 #include <QVector>
 
 namespace WavReader
@@ -10,13 +9,13 @@ namespace WavReader
 #pragma pack(push, 1)
 struct ChunkHeader
 {
-    char ID[4];
+    quint32 id; // char[4]
     quint32 size;
-    char format[4];
+    quint32 format; // char[4]
 };
 struct SubChunkHeader
 {
-    char ID[4];
+    quint32 id; // char[4]
     quint32 size;
 };
 struct FormatSubChunk
@@ -32,10 +31,10 @@ struct FormatSubChunk
 
 typedef QVector<qint32> SamplesVector;
 
-const char RIFF_ID[] = "RIFF";
-const char WAVE[] = "WAVE";
-const QString FORMAT_ID = "fmt ";
-const QString DATA_ID = "data";
+const quint32 ID_RIFF   = 0x46464952u, // RIFF
+              FMT_WAVE  = 0x45564157u, // WAVE
+              ID_FORMAT = 0x20746D66u, // fmt_
+              ID_DATA   = 0x61746164u; // data
 
 class WavReader
 {

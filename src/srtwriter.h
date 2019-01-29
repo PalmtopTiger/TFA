@@ -1,9 +1,7 @@
 #ifndef SRTWRITER_H
 #define SRTWRITER_H
 
-#include <QPair>
 #include <QList>
-#include <QString>
 
 namespace SrtWriter
 {
