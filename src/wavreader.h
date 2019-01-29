@@ -1,6 +1,7 @@
 #ifndef WAVREADER_H
 #define WAVREADER_H
 
+#include <QString>
 #include <QVector>
 
 namespace WavReader

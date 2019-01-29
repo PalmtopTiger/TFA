@@ -1,7 +1,9 @@
 #include "wavreader.h"
 #include <QMessageBox>
 #include <QFile>
+#include <QDataStream>
 #include <QMap>
+#include <QByteArray>
 #include <cstring>
 
 namespace WavReader

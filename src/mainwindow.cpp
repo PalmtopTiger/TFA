@@ -2,7 +2,9 @@
 #include "ui_mainwindow.h"
 #include "srtwriter.h"
 #include <QDesktopWidget>
+#include <QDragEnterEvent>
 #include <QMimeData>
+#include <QUrl>
 #include <QFileDialog>
 #include <QDateTime>
 #include <QStandardItemModel>
