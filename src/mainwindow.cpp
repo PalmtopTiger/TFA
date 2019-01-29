@@ -8,7 +8,7 @@
 #include <QStandardItemModel>
 #include <QMenu>
 #include <QClipboard>
-#include <qmath.h>
+#include <QtMath>
 
 void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
 QString UrlToPath(const QUrl &url);
