@@ -7,7 +7,6 @@
 #include <QUrl>
 #include <QFileDialog>
 #include <QDateTime>
-#include <QStandardItemModel>
 #include <QMenu>
 #include <QClipboard>
 #include <QtMath>
@@ -27,8 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QStandardItemModel* const model = new QStandardItemModel();
-    model->setVerticalHeaderLabels({
+    ui->tbInfo->setVerticalHeaderLabels({
         "Имя файла",
         "Формат",
         "Продолжительность",
@@ -38,7 +36,6 @@ MainWindow::MainWindow(QWidget *parent) :
         "Битовая глубина"
     });
     ui->tbInfo->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    ui->tbInfo->setModel(model);
     ui->tbInfo->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tbInfo->verticalHeader(), &QHeaderView::customContextMenuRequested, this, &MainWindow::on_tbInfo_customHeaderContextMenuRequested);
 
@@ -125,13 +122,11 @@ QMenu* MainWindow::createContextMenu()
 
 void MainWindow::copyInfo()
 {
-    const QStandardItemModel* const model = static_cast<QStandardItemModel *>(ui->tbInfo->model());
-
     QStringList data;
-    for (int i = 0; i < model->rowCount(); ++i) {
+    for (int i = 0; i < ui->tbInfo->rowCount(); ++i) {
         data.append(QString("%1: %2")
-                    .arg(model->verticalHeaderItem(i)->text())
-                    .arg(model->item(i)->text()));
+                    .arg(ui->tbInfo->verticalHeaderItem(i)->text())
+                    .arg(ui->tbInfo->item(i, 0)->text()));
     }
 
     QApplication::clipboard()->setText(data.join('\n'));
@@ -139,14 +134,12 @@ void MainWindow::copyInfo()
 
 void MainWindow::openFile(const QString &fileName)
 {
-    QStandardItemModel* const model = static_cast<QStandardItemModel *>(ui->tbInfo->model());
-
     this->_reader.open(fileName);
     if (_reader.hasErrors())
     {
         ui->tbInfo->setEnabled(false);
         ui->btSave->setEnabled(false);
-        model->removeColumns(0, 1);
+        ui->tbInfo->clearContents();
         return;
     }
     _fileInfo.setFile(fileName);
@@ -155,13 +148,13 @@ void MainWindow::openFile(const QString &fileName)
     QDateTime dt;
     dt.setTime_t(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
 
-    model->setItem(0, new QStandardItem(_fileInfo.fileName()));
-    model->setItem(1, new QStandardItem(format.audioFormat == 1 ? "PCM" : "неизвестен"));
-    model->setItem(2, new QStandardItem(dt.toString("HH:mm:ss")));
-    model->setItem(3, new QStandardItem(QString("%1 Кбит/сек").arg(format.byteRate * 0.008)));
-    model->setItem(4, new QStandardItem(QString::number(format.numChannels)));
-    model->setItem(5, new QStandardItem(QString("%1 КГц").arg(format.sampleRate * 0.001)));
-    model->setItem(6, new QStandardItem(QString("%1 бит").arg(format.bitsPerSample)));
+    ui->tbInfo->setItem(0, 0, new QTableWidgetItem(_fileInfo.fileName()));
+    ui->tbInfo->setItem(1, 0, new QTableWidgetItem(format.audioFormat == 1 ? "PCM" : "неизвестен"));
+    ui->tbInfo->setItem(2, 0, new QTableWidgetItem(dt.toString("HH:mm:ss")));
+    ui->tbInfo->setItem(3, 0, new QTableWidgetItem(QString("%1 Кбит/сек").arg(format.byteRate * 0.008)));
+    ui->tbInfo->setItem(4, 0, new QTableWidgetItem(QString::number(format.numChannels)));
+    ui->tbInfo->setItem(5, 0, new QTableWidgetItem(QString("%1 КГц").arg(format.sampleRate * 0.001)));
+    ui->tbInfo->setItem(6, 0, new QTableWidgetItem(QString("%1 бит").arg(format.bitsPerSample)));
 
     ui->tbInfo->setEnabled(true);
     ui->btSave->setEnabled(true);

@@ -106,7 +106,7 @@ void WavReader::open(const QString &fileName)
     }
 
     QByteArray &format = subchunks[ID_FORMAT];
-    if (static_cast<size_t>(format.size()) != sizeof(FormatSubChunk))
+    if (static_cast<size_t>(format.size()) < sizeof(FormatSubChunk))
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT неверного размера.");
         return;
