@@ -1,7 +1,6 @@
 #include "wavreader.h"
 #include <QMessageBox>
 #include <QFile>
-#include <QDataStream>
 #include <QMap>
 #include <QByteArray>
 #include <cstring>
@@ -43,11 +42,10 @@ void WavReader::open(const QString &fileName)
         fin.close();
         return;
     }
-    QDataStream in(&fin);
 
     // Чтение заголовка первого чанка
     ChunkHeader header;
-    if (in.readRawData(reinterpret_cast<char*>(&header), sizeof(ChunkHeader)) < 0)
+    if (fin.read(reinterpret_cast<char*>(&header), sizeof(ChunkHeader)) != sizeof(ChunkHeader))
     {
         QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
         fin.close();
@@ -75,30 +73,23 @@ void WavReader::open(const QString &fileName)
 
     // Чтение сабчанков
     QMap<quint32, QByteArray> subchunks;
-    QMap<quint32, QByteArray>::iterator it;
     SubChunkHeader subheader;
-    while(!in.atEnd())
+    while(!fin.atEnd())
     {
-        if (in.readRawData(reinterpret_cast<char*>(&subheader), sizeof(SubChunkHeader)) < 0)
+        if (fin.read(reinterpret_cast<char*>(&subheader), sizeof(SubChunkHeader)) != sizeof(SubChunkHeader))
         {
             QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
             fin.close();
             return;
         }
 
-        it = subchunks.find(subheader.id);
-        if (it == subchunks.end())
+        if (subchunks.contains(subheader.id))
         {
-            it = subchunks.insert(subheader.id, QByteArray());
-        }
-        else
-        {
-            QMessageBox::warning(nullptr, "Ошибка", QString("Повторяющаяся структура: %1").arg(subheader.id, 0, 16));
+            QMessageBox::warning(nullptr, "Предупреждение", QString("Повторяющаяся структура: %1").arg(subheader.id, 0, 16));
         }
 
-        it->resize(static_cast<int>(subheader.size));
-
-        if (in.readRawData(it->data(), static_cast<int>(subheader.size)) < 0)
+        QByteArray &chunk = subchunks[subheader.id] = fin.read(subheader.size);
+        if (chunk.size() != static_cast<int>(subheader.size))
         {
             QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
             fin.close();
@@ -108,19 +99,20 @@ void WavReader::open(const QString &fileName)
     fin.close();
 
     // Разбор секции FORMAT
-    it = subchunks.find(ID_FORMAT);
-    if (it == subchunks.end())
+    if (!subchunks.contains(ID_FORMAT))
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT не найдена.");
         return;
     }
-    if (static_cast<size_t>(it->size()) < sizeof(FormatSubChunk))
+
+    QByteArray &format = subchunks[ID_FORMAT];
+    if (static_cast<size_t>(format.size()) != sizeof(FormatSubChunk))
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT неверного размера.");
         return;
     }
 
-    std::memcpy(&(this->_format), it->data(), sizeof(FormatSubChunk));
+    std::memcpy(&(this->_format), format.constData(), sizeof(FormatSubChunk));
 
     if (1 != this->_format.audioFormat)
     {
@@ -129,13 +121,14 @@ void WavReader::open(const QString &fileName)
     }
 
     // Разбор секции DATA
-    it = subchunks.find(ID_DATA);
-    if (it == subchunks.end())
+    if (!subchunks.contains(ID_DATA))
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция DATA не найдена.");
         return;
     }
-    if (it->size() < 1)
+
+    QByteArray &data = subchunks[ID_DATA];
+    if (!data.size())
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция DATA пуста.");
         return;
@@ -151,25 +144,25 @@ void WavReader::open(const QString &fileName)
     switch (this->_format.bitsPerSample)
     {
     case 32:
-        this->_samples.resize(it->size() / 4);
-        for (int i = 0, j = 0, len = it->size(); i < len; i += 4, ++j)
+        this->_samples.resize(data.size() / 4);
+        for (int i = 0, j = 0, len = data.size(); i < len; i += 4, ++j)
         {
-            *byte0 = it->at(i);
-            *byte1 = it->at(i + 1);
-            *byte2 = it->at(i + 2);
-            *byte3 = it->at(i + 3);
+            *byte0 = data.at(i);
+            *byte1 = data.at(i + 1);
+            *byte2 = data.at(i + 2);
+            *byte3 = data.at(i + 3);
 
             this->_samples[j] = sample;
         }
         break;
 
     case 24:
-        this->_samples.resize(it->size() / 3);
-        for (int i = 0, j = 0, len = it->size(); i < len; i += 3, ++j)
+        this->_samples.resize(data.size() / 3);
+        for (int i = 0, j = 0, len = data.size(); i < len; i += 3, ++j)
         {
-            *byte0 = it->at(i);
-            *byte1 = it->at(i + 1);
-            *byte2 = it->at(i + 2);
+            *byte0 = data.at(i);
+            *byte1 = data.at(i + 1);
+            *byte2 = data.at(i + 2);
 
             if (*byte2 & signBit)
             {
@@ -185,11 +178,11 @@ void WavReader::open(const QString &fileName)
         break;
 
     case 16:
-        this->_samples.resize(it->size() / 2);
-        for (int i = 0, j = 0, len = it->size(); i < len; i += 2, ++j)
+        this->_samples.resize(data.size() / 2);
+        for (int i = 0, j = 0, len = data.size(); i < len; i += 2, ++j)
         {
-            *byte0 = it->at(i);
-            *byte1 = it->at(i + 1);
+            *byte0 = data.at(i);
+            *byte1 = data.at(i + 1);
 
             if (*byte1 & signBit)
             {
@@ -205,10 +198,10 @@ void WavReader::open(const QString &fileName)
         break;
 
     case 8:
-        this->_samples.resize(it->size());
-        for (int i = 0, len = it->size(); i < len; ++i)
+        this->_samples.resize(data.size());
+        for (int i = 0, len = data.size(); i < len; ++i)
         {
-            *byte0 = it->at(i);
+            *byte0 = data.at(i);
             *byte1 = *byte2 = *byte3 = 0;
 
             sample -= 128; // Центрируем
