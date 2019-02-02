@@ -181,15 +181,7 @@ void WavReader::open(const QString &fileName)
             *byte0 = data.at(i);
             *byte1 = data.at(i + 1);
             *byte2 = data.at(i + 2);
-
-            if (*byte2 & signBit)
-            {
-                *byte3 = maxChar;
-            }
-            else
-            {
-                *byte3 = 0;
-            }
+            *byte3 = (*byte2 & signBit) ? maxChar : 0;
 
             this->_samples[j] = sample << 8; // Приводим к 32 битам
         }
@@ -201,15 +193,7 @@ void WavReader::open(const QString &fileName)
         {
             *byte0 = data.at(i);
             *byte1 = data.at(i + 1);
-
-            if (*byte1 & signBit)
-            {
-                *byte2 = *byte3 = maxChar;
-            }
-            else
-            {
-                *byte2 = *byte3 = 0;
-            }
+            *byte2 = *byte3 = (*byte1 & signBit) ? maxChar : 0;
 
             this->_samples[j] = sample << 16; // Приводим к 32 битам
         }
