@@ -24,7 +24,6 @@
 
 namespace WavReader
 {
-// https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 #pragma pack(push, 1)
 struct ChunkHeader
 {
@@ -50,6 +49,7 @@ struct FormatSubChunk
 
 typedef QVector<qint32> SamplesVector;
 
+// Little-endian
 const quint32 ID_RIFF   = 0x46464952u, // RIFF
               FMT_WAVE  = 0x45564157u, // WAVE
               ID_FORMAT = 0x20746D66u, // fmt_

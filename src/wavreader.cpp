@@ -21,6 +21,7 @@
 #include <QFile>
 #include <QMap>
 #include <QByteArray>
+#include <QBuffer>
 #include <cstring>
 
 namespace WavReader
@@ -145,77 +146,61 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    QByteArray &data = subchunks[ID_DATA];
-    if (!data.size())
+    if (!subchunks[ID_DATA].size())
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция DATA пуста.");
         return;
     }
 
     qint32 sample;
-    char* byte0 = reinterpret_cast<char*>(&sample);
-    char* byte1 = byte0 + 1;
-    char* byte2 = byte0 + 2;
-    char* byte3 = byte0 + 3;
-    const char signBit = '\x80'; // 0b10000000
-    const char maxChar = '\xFF'; // 0b11111111
+    char* samplePtr = reinterpret_cast<char*>(&sample);
+    QBuffer data(&subchunks[ID_DATA]);
+    data.open(QIODevice::ReadOnly);
     switch (this->_format.bitsPerSample)
     {
     case 32:
-        this->_samples.resize(data.size() / 4);
-        for (int i = 0, j = 0, len = data.size(); i < len; i += 4, ++j)
+        this->_samples.reserve(static_cast<int>(data.size() / 4));
+        while (data.bytesAvailable() >= 4)
         {
-            *byte0 = data.at(i);
-            *byte1 = data.at(i + 1);
-            *byte2 = data.at(i + 2);
-            *byte3 = data.at(i + 3);
-
-            this->_samples[j] = sample;
+            data.read(samplePtr, 4);
+            this->_samples.append(sample);
         }
         break;
 
     case 24:
-        this->_samples.resize(data.size() / 3);
-        for (int i = 0, j = 0, len = data.size(); i < len; i += 3, ++j)
+        this->_samples.reserve(static_cast<int>(data.size() / 3));
+        while (data.bytesAvailable() >= 3)
         {
-            *byte0 = data.at(i);
-            *byte1 = data.at(i + 1);
-            *byte2 = data.at(i + 2);
-            *byte3 = (*byte2 & signBit) ? maxChar : 0;
-
-            this->_samples[j] = sample << 8; // Приводим к 32 битам
+            data.read(samplePtr, 3);
+            this->_samples.append(sample << 8); // Приводим к 32 битам, знаковый бит попадёт куда нужно
         }
         break;
 
     case 16:
-        this->_samples.resize(data.size() / 2);
-        for (int i = 0, j = 0, len = data.size(); i < len; i += 2, ++j)
+        this->_samples.reserve(static_cast<int>(data.size() / 2));
+        while (data.bytesAvailable() >= 2)
         {
-            *byte0 = data.at(i);
-            *byte1 = data.at(i + 1);
-            *byte2 = *byte3 = (*byte1 & signBit) ? maxChar : 0;
-
-            this->_samples[j] = sample << 16; // Приводим к 32 битам
+            data.read(samplePtr, 2);
+            this->_samples.append(sample << 16); // Приводим к 32 битам, знаковый бит попадёт куда нужно
         }
         break;
 
     case 8:
-        this->_samples.resize(data.size());
-        for (int i = 0, len = data.size(); i < len; ++i)
+        this->_samples.reserve(static_cast<int>(data.size()));
+        while (data.bytesAvailable() >= 1)
         {
-            *byte0 = data.at(i);
-            *byte1 = *byte2 = *byte3 = 0;
-
-            sample -= 128; // Центрируем
-
-            this->_samples[i] = sample << 24; // Приводим к 32 битам
+            data.read(samplePtr, 1);
+            sample &= 0xFF; // Зануляем остальные биты
+            this->_samples.append((sample - 128) * 16777216); // Приводим к 32 битам, 128 в 8-битных WAV означает 0, сдвиг не подходит
         }
         break;
 
     default:
+        data.close();
         QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только целочисленные WAV.");
         return;
     }
+    data.close();
 
     this->_hasErrors = false;
 }
