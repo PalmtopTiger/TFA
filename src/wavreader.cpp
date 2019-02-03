@@ -172,7 +172,8 @@ void WavReader::open(const QString &fileName)
         while (data.bytesAvailable() >= 3)
         {
             data.read(samplePtr, 3);
-            this->_samples.append(sample << 8); // Приводим к 32 битам, знаковый бит попадёт куда нужно
+            sample <<= 8; // Приводим к 32 битам, знаковый бит попадёт куда нужно
+            this->_samples.append(sample);
         }
         break;
 
@@ -181,7 +182,8 @@ void WavReader::open(const QString &fileName)
         while (data.bytesAvailable() >= 2)
         {
             data.read(samplePtr, 2);
-            this->_samples.append(sample << 16); // Приводим к 32 битам, знаковый бит попадёт куда нужно
+            sample <<= 16; // Приводим к 32 битам, знаковый бит попадёт куда нужно
+            this->_samples.append(sample);
         }
         break;
 
@@ -191,7 +193,9 @@ void WavReader::open(const QString &fileName)
         {
             data.read(samplePtr, 1);
             sample &= 0xFF; // Зануляем остальные биты
-            this->_samples.append((sample - 128) * 16777216); // Приводим к 32 битам, 128 в 8-битных WAV означает 0, сдвиг не подходит
+            sample -= 128; // 128 в 8-битных WAV означает 0
+            sample *= 16777216; //  Приводим к 32 битам, сдвиг не подходит
+            this->_samples.append(sample);
         }
         break;
 
