@@ -29,7 +29,7 @@
 #include <QClipboard>
 #include <QtMath>
 
-void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels);
+void StereoToMono(WavReader::SamplesVector& samples, const int numChannels);
 QString UrlToPath(const QUrl &url);
 
 const QString DEFAULT_DIR_KEY  = "DefaultDir",
@@ -184,7 +184,7 @@ void MainWindow::saveFile(const QString &fileName)
     WavReader::SamplesVector samples = _reader.samples();
     if (format.numChannels > 1)
     {
-        GetFirstChannel(samples, format.numChannels);
+        StereoToMono(samples, format.numChannels);
     }
 
     qint32 maxVol = 0;
@@ -247,11 +247,14 @@ void MainWindow::saveFile(const QString &fileName)
 }
 
 
-void GetFirstChannel(WavReader::SamplesVector& samples, const int numChannels)
+void StereoToMono(WavReader::SamplesVector& samples, const int numChannels)
 {
+    qint32 left, right;
     for (int i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
     {
-        samples[j] = samples[i];
+        left  = samples[i];
+        right = samples[i + 1];
+        samples[j] = (left / 2) + (right / 2) + ((left % 2 + right % 2) / 2);
     }
     samples.resize(samples.size() / numChannels);
 }
