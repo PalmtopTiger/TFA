@@ -167,7 +167,17 @@ void MainWindow::openFile(const QString &fileName)
     dt.setTime_t(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
 
     ui->tbInfo->setItem(0, 0, new QTableWidgetItem(_fileInfo.fileName()));
-    ui->tbInfo->setItem(1, 0, new QTableWidgetItem(format.audioFormat == 1 ? "PCM" : "неизвестен"));
+    switch (format.audioFormat)
+    {
+    case WavReader::FMT_INT:
+        ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Integer PCM"));
+        break;
+    case WavReader::FMT_FLOAT:
+        ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Float PCM"));
+        break;
+    default:
+        ui->tbInfo->setItem(1, 0, new QTableWidgetItem("неизвестен"));
+    }
     ui->tbInfo->setItem(2, 0, new QTableWidgetItem(dt.toString("HH:mm:ss")));
     ui->tbInfo->setItem(3, 0, new QTableWidgetItem(QString("%1 Кбит/сек").arg(format.byteRate * 0.008)));
     ui->tbInfo->setItem(4, 0, new QTableWidgetItem(QString::number(format.numChannels)));
@@ -187,14 +197,9 @@ void MainWindow::saveFile(const QString &fileName)
         StereoToMono(samples, format.numChannels);
     }
 
-    qint32 maxVol = 0;
-    for (const qint32 s : qAsConst(samples))
-    {
-        maxVol = qMax(maxVol, qAbs(s));
-    }
-
+    const qreal maxVol = *std::max_element(samples.constBegin(), samples.constEnd());
     const qreal samplesInMsec = format.sampleRate * 0.001;
-    const qint32 threshold = qFloor(maxVol * ui->spinThreshold->value() * 0.01);
+    const qreal threshold = maxVol * ui->spinThreshold->value() * 0.01;
     const int minInterval = qRound(ui->spinMinInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;
@@ -249,12 +254,9 @@ void MainWindow::saveFile(const QString &fileName)
 
 void StereoToMono(WavReader::SamplesVector& samples, const int numChannels)
 {
-    qint32 left, right;
     for (int i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
     {
-        left  = samples[i];
-        right = samples[i + 1];
-        samples[j] = (left / 2) + (right / 2) + ((left % 2 + right % 2) / 2);
+        samples[j] = (samples[i] + samples[i + 1]) / 2.0;
     }
     samples.resize(samples.size() / numChannels);
 }

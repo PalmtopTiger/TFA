@@ -133,12 +133,6 @@ void WavReader::open(const QString &fileName)
 
     std::memcpy(&(this->_format), format.constData(), sizeof(FormatSubChunk));
 
-    if (1 != this->_format.audioFormat)
-    {
-        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только несжатые WAV.");
-        return;
-    }
-
     // Разбор секции DATA
     if (!subchunks.contains(ID_DATA))
     {
@@ -152,56 +146,102 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    qint32 sample;
-    char* samplePtr = reinterpret_cast<char*>(&sample);
     QBuffer data(&subchunks[ID_DATA]);
     data.open(QIODevice::ReadOnly);
-    switch (this->_format.bitsPerSample)
+    switch (this->_format.audioFormat)
     {
-    case 32:
-        this->_samples.reserve(static_cast<int>(data.size() / 4));
-        while (data.bytesAvailable() >= 4)
+    case FMT_INT:
+        switch (this->_format.bitsPerSample)
         {
-            data.read(samplePtr, 4);
-            this->_samples.append(sample);
+        case 32:
+        {
+            this->_samples.reserve(static_cast<int>(data.size() / sizeof(qint32)));
+            qint32 sample;
+            while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint32)) == sizeof(qint32))
+            {
+                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+            }
+            break;
+        }
+
+        case 24:
+        {
+            const int sampleSize = sizeof(qint32) - 1;
+            this->_samples.reserve(static_cast<int>(data.size() / sampleSize));
+            qint32 sample = 0; // Зануление необходимо
+            char* samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
+            while (data.read(samplePtr, sampleSize) == sampleSize)
+            {
+                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+            }
+            break;
+        }
+
+        case 16:
+        {
+            this->_samples.reserve(static_cast<int>(data.size() / sizeof(qint16)));
+            qint16 sample;
+            while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint16)) == sizeof(qint16))
+            {
+                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
+            }
+            break;
+        }
+
+        case 8:
+        {
+            this->_samples.reserve(static_cast<int>(data.size()));
+            quint8 sample;
+            while (data.read(reinterpret_cast<char*>(&sample), sizeof(quint8)) == sizeof(quint8))
+            {
+                // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
+                this->_samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
+            }
+            break;
+        }
+
+        default:
+            data.close();
+            QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
+            return;
         }
         break;
 
-    case 24:
-        this->_samples.reserve(static_cast<int>(data.size() / 3));
-        while (data.bytesAvailable() >= 3)
+    case FMT_FLOAT:
+        switch (this->_format.bitsPerSample)
         {
-            data.read(samplePtr, 3);
-            sample <<= 8; // Приводим к 32 битам, знаковый бит попадёт куда нужно
-            this->_samples.append(sample);
+        case 64:
+        {
+            this->_samples.reserve(static_cast<int>(data.size() / sizeof(double)));
+            double sample;
+            while (data.read(reinterpret_cast<char*>(&sample), sizeof(double)) == sizeof(double))
+            {
+                this->_samples.append(static_cast<qreal>(sample));
+            }
+            break;
         }
-        break;
 
-    case 16:
-        this->_samples.reserve(static_cast<int>(data.size() / 2));
-        while (data.bytesAvailable() >= 2)
+        case 32:
         {
-            data.read(samplePtr, 2);
-            sample <<= 16; // Приводим к 32 битам, знаковый бит попадёт куда нужно
-            this->_samples.append(sample);
+            this->_samples.reserve(static_cast<int>(data.size() / sizeof(float)));
+            float sample;
+            while (data.read(reinterpret_cast<char*>(&sample), sizeof(float)) == sizeof(float))
+            {
+                this->_samples.append(static_cast<qreal>(sample));
+            }
+            break;
         }
-        break;
 
-    case 8:
-        this->_samples.reserve(static_cast<int>(data.size()));
-        while (data.bytesAvailable() >= 1)
-        {
-            data.read(samplePtr, 1);
-            sample &= 0xFF; // Зануляем остальные биты
-            sample -= 128; // 128 в 8-битных WAV означает 0
-            sample *= 16777216; //  Приводим к 32 битам, сдвиг не подходит
-            this->_samples.append(sample);
+        default:
+            data.close();
+            QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
+            return;
         }
         break;
 
     default:
         data.close();
-        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только целочисленные WAV.");
+        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только несжатые WAV.");
         return;
     }
     data.close();

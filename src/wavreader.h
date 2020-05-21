@@ -47,13 +47,15 @@ struct FormatSubChunk
 };
 #pragma pack (pop)
 
-typedef QVector<qint32> SamplesVector;
+typedef QVector<qreal> SamplesVector;
 
 // Little-endian
 const quint32 ID_RIFF   = 0x46464952u, // RIFF
               FMT_WAVE  = 0x45564157u, // WAVE
               ID_FORMAT = 0x20746D66u, // fmt_
               ID_DATA   = 0x61746164u; // data
+const quint16 FMT_INT   = 1u,
+              FMT_FLOAT = 3u;
 
 class WavReader
 {
