@@ -29,14 +29,8 @@ struct ChunkHeader
 {
     quint32 id; // char[4]
     quint32 size;
-    quint32 format; // char[4]
 };
-struct SubChunkHeader
-{
-    quint32 id; // char[4]
-    quint32 size;
-};
-struct FormatSubChunk
+struct FormatChunk
 {
     quint16 audioFormat;
     quint16 numChannels;
@@ -59,7 +53,7 @@ const quint16 PCM_INT   = 1u,
 
 class WavReader
 {
-    FormatSubChunk _format;
+    FormatChunk _format;
     SamplesVector _samples;
     bool _hasErrors;
 
@@ -70,7 +64,7 @@ public:
     void open(const QString& fileName);
     bool hasErrors();
     void toMono();
-    const FormatSubChunk& format();
+    const FormatChunk& format();
     const SamplesVector& samples();
 };
 }

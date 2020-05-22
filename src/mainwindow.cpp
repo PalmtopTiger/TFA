@@ -162,7 +162,7 @@ void MainWindow::openFile(const QString &fileName)
     }
     _fileInfo.setFile(fileName);
 
-    const WavReader::FormatSubChunk& format = _reader.format();
+    const WavReader::FormatChunk& format = _reader.format();
     QDateTime dt;
     dt.setTime_t(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
 

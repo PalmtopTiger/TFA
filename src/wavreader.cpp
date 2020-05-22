@@ -19,9 +19,6 @@
 #include "wavreader.h"
 #include <QMessageBox>
 #include <QFile>
-#include <QMap>
-#include <QByteArray>
-#include <QBuffer>
 #include <cstring>
 
 namespace WavReader
@@ -40,7 +37,7 @@ void WavReader::clear()
 {
     _hasErrors = true;
 
-    std::memset(&_format, 0, sizeof(FormatSubChunk));
+    std::memset(&_format, 0, sizeof(FormatChunk));
     _samples.clear();
 }
 
@@ -55,196 +52,222 @@ void WavReader::open(const QString &fileName)
         QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для чтения.");
         return;
     }
-    if (static_cast<size_t>(fin.size()) < (sizeof(ChunkHeader) + sizeof(FormatSubChunk) + sizeof(SubChunkHeader) * 2))
+    if (static_cast<size_t>(fin.size()) < (sizeof(ChunkHeader) * 3 + sizeof(quint32) + sizeof(FormatChunk)))
     {
-        QMessageBox::critical(nullptr, "Ошибка", "Файл подозрительно мал.");
         fin.close();
+        QMessageBox::critical(nullptr, "Ошибка", "Файл подозрительно мал.");
         return;
     }
 
-    // Чтение заголовка первого чанка
+    // Чтение заголовка
     ChunkHeader header;
     if (fin.read(reinterpret_cast<char*>(&header), sizeof(ChunkHeader)) != sizeof(ChunkHeader))
     {
-        QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
         fin.close();
+        QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
         return;
     }
 
     if (ID_RIFF != header.id)
     {
+        fin.close();
         QMessageBox::critical(nullptr, "Ошибка", "Не найден заголовок RIFF.");
-        fin.close();
         return;
     }
-    if (static_cast<size_t>(fin.size()) < (sizeof(SubChunkHeader) + header.size))
+    const qint64 fileSize = sizeof(ChunkHeader) + header.size;
+    if (fin.size() < fileSize)
     {
+        fin.close();
         QMessageBox::critical(nullptr, "Ошибка", "Реальный размер файла меньше, чем указанный в заголовке.");
-        fin.close();
         return;
     }
-    if (FMT_WAVE != header.format)
+
+    quint32 fileFormat;
+    if (fin.read(reinterpret_cast<char*>(&fileFormat), sizeof(quint32)) != sizeof(quint32))
     {
+        fin.close();
+        QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
+        return;
+    }
+    if (FMT_WAVE != fileFormat)
+    {
+        fin.close();
         QMessageBox::critical(nullptr, "Ошибка", "Файл RIFF не является файлом WAV.");
-        fin.close();
         return;
     }
 
-    // Чтение сабчанков
-    QMap<quint32, QByteArray> subchunks;
-    SubChunkHeader subheader;
-    while(!fin.atEnd())
+    // Чтение секций
+    bool hasFormat = false, hasData = false;
+    qint64 chunkEnd = 0;
+    while(!fin.atEnd() && fin.pos() < fileSize)
     {
-        if (fin.read(reinterpret_cast<char*>(&subheader), sizeof(SubChunkHeader)) != sizeof(SubChunkHeader))
+        if (fin.read(reinterpret_cast<char*>(&header), sizeof(ChunkHeader)) != sizeof(ChunkHeader))
         {
-            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
             fin.close();
+            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
+            return;
+        }
+        if (fin.bytesAvailable() < header.size)
+        {
+            fin.close();
+            QMessageBox::critical(nullptr, "Ошибка", "Указанный размер секции больше, чем осталось до конца файла.");
             return;
         }
 
-        if (subchunks.contains(subheader.id))
+        // Разбор секций
+        switch (header.id)
         {
-            QMessageBox::warning(nullptr, "Предупреждение", QString("Повторяющаяся структура: %1").arg(subheader.id, 0, 16));
-        }
+        case ID_FORMAT:
+            if (hasFormat)
+            {
+                QMessageBox::warning(nullptr, "Предупреждение", "Повторяющаяся секция FORMAT");
+            }
 
-        QByteArray &chunk = subchunks[subheader.id] = fin.read(subheader.size);
-        if (chunk.size() != static_cast<int>(subheader.size))
-        {
-            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
-            fin.close();
-            return;
+            if (fin.read(reinterpret_cast<char*>(&_format), sizeof(FormatChunk)) != sizeof(FormatChunk))
+            {
+                fin.close();
+                QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
+                return;
+            }
+            hasFormat = true;
+            break;
+
+        case ID_DATA:
+            if (hasData)
+            {
+                QMessageBox::warning(nullptr, "Предупреждение", "Повторяющаяся секция DATA");
+            }
+
+            if (!hasFormat)
+            {
+                fin.close();
+                QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT не найдена.");
+                return;
+            }
+
+            chunkEnd = fin.pos() + header.size;
+
+            switch (_format.audioFormat)
+            {
+            case PCM_INT:
+                switch (_format.bitsPerSample)
+                {
+                case 32:
+                {
+                    _samples.reserve(static_cast<int>(fin.size() / sizeof(qint32)));
+                    qint32 sample;
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(reinterpret_cast<char*>(&sample), sizeof(qint32)) == sizeof(qint32))
+                    {
+                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                    }
+                    break;
+                }
+
+                case 24:
+                {
+                    const qint64 sampleSize = sizeof(qint32) - 1;
+                    _samples.reserve(static_cast<int>(fin.size() / sampleSize));
+                    qint32 sample = 0; // Зануление необходимо
+                    char* samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(samplePtr, sampleSize) == sampleSize)
+                    {
+                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                    }
+                    break;
+                }
+
+                case 16:
+                {
+                    _samples.reserve(static_cast<int>(fin.size() / sizeof(qint16)));
+                    qint16 sample;
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(reinterpret_cast<char*>(&sample), sizeof(qint16)) == sizeof(qint16))
+                    {
+                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
+                    }
+                    break;
+                }
+
+                case 8:
+                {
+                    _samples.reserve(static_cast<int>(fin.size()));
+                    quint8 sample;
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(reinterpret_cast<char*>(&sample), sizeof(quint8)) == sizeof(quint8))
+                    {
+                        // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
+                        _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
+                    }
+                    break;
+                }
+
+                default:
+                    fin.close();
+                    QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
+                    return;
+                }
+                break;
+
+            case PCM_FLOAT:
+                switch (_format.bitsPerSample)
+                {
+                case 64:
+                {
+                    _samples.reserve(static_cast<int>(fin.size() / sizeof(double)));
+                    double sample;
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(reinterpret_cast<char*>(&sample), sizeof(double)) == sizeof(double))
+                    {
+                        _samples.append(static_cast<qreal>(sample));
+                    }
+                    break;
+                }
+
+                case 32:
+                {
+                    _samples.reserve(static_cast<int>(fin.size() / sizeof(float)));
+                    float sample;
+                    while (fin.pos() < chunkEnd &&
+                           fin.read(reinterpret_cast<char*>(&sample), sizeof(float)) == sizeof(float))
+                    {
+                        _samples.append(static_cast<qreal>(sample));
+                    }
+                    break;
+                }
+
+                default:
+                    fin.close();
+                    QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
+                    return;
+                }
+                break;
+
+            default:
+                fin.close();
+                QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только несжатые WAV.");
+                return;
+            }
+            hasData = true;
+            break;
+
+        default:
+            if (fin.skip(header.size) != header.size)
+            {
+                fin.close();
+                QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
+                return;
+            }
         }
     }
     fin.close();
 
-    // Разбор секции FORMAT
-    if (!subchunks.contains(ID_FORMAT))
-    {
-        QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT не найдена.");
-        return;
-    }
-
-    QByteArray &format = subchunks[ID_FORMAT];
-    if (static_cast<size_t>(format.size()) < sizeof(FormatSubChunk))
-    {
-        QMessageBox::critical(nullptr, "Ошибка", "Секция FORMAT неверного размера.");
-        return;
-    }
-
-    std::memcpy(&(_format), format.constData(), sizeof(FormatSubChunk));
-
-    // Разбор секции DATA
-    if (!subchunks.contains(ID_DATA))
+    if (!hasData)
     {
         QMessageBox::critical(nullptr, "Ошибка", "Секция DATA не найдена.");
         return;
     }
-
-    if (!subchunks[ID_DATA].size())
-    {
-        QMessageBox::critical(nullptr, "Ошибка", "Секция DATA пуста.");
-        return;
-    }
-
-    QBuffer data(&subchunks[ID_DATA]);
-    data.open(QIODevice::ReadOnly);
-    switch (_format.audioFormat)
-    {
-    case PCM_INT:
-        switch (_format.bitsPerSample)
-        {
-        case 32:
-        {
-            _samples.reserve(static_cast<int>(data.size() / sizeof(qint32)));
-            qint32 sample;
-            while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint32)) == sizeof(qint32))
-            {
-                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
-            }
-            break;
-        }
-
-        case 24:
-        {
-            const int sampleSize = sizeof(qint32) - 1;
-            _samples.reserve(static_cast<int>(data.size() / sampleSize));
-            qint32 sample = 0; // Зануление необходимо
-            char* samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
-            while (data.read(samplePtr, sampleSize) == sampleSize)
-            {
-                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
-            }
-            break;
-        }
-
-        case 16:
-        {
-            _samples.reserve(static_cast<int>(data.size() / sizeof(qint16)));
-            qint16 sample;
-            while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint16)) == sizeof(qint16))
-            {
-                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
-            }
-            break;
-        }
-
-        case 8:
-        {
-            _samples.reserve(static_cast<int>(data.size()));
-            quint8 sample;
-            while (data.read(reinterpret_cast<char*>(&sample), sizeof(quint8)) == sizeof(quint8))
-            {
-                // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
-                _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
-            }
-            break;
-        }
-
-        default:
-            data.close();
-            QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
-            return;
-        }
-        break;
-
-    case PCM_FLOAT:
-        switch (_format.bitsPerSample)
-        {
-        case 64:
-        {
-            _samples.reserve(static_cast<int>(data.size() / sizeof(double)));
-            double sample;
-            while (data.read(reinterpret_cast<char*>(&sample), sizeof(double)) == sizeof(double))
-            {
-                _samples.append(static_cast<qreal>(sample));
-            }
-            break;
-        }
-
-        case 32:
-        {
-            _samples.reserve(static_cast<int>(data.size() / sizeof(float)));
-            float sample;
-            while (data.read(reinterpret_cast<char*>(&sample), sizeof(float)) == sizeof(float))
-            {
-                _samples.append(static_cast<qreal>(sample));
-            }
-            break;
-        }
-
-        default:
-            data.close();
-            QMessageBox::critical(nullptr, "Ошибка", "Неправильный размер сэмпла.");
-            return;
-        }
-        break;
-
-    default:
-        data.close();
-        QMessageBox::critical(nullptr, "Ошибка", "Программа поддерживает только несжатые WAV.");
-        return;
-    }
-    data.close();
 
     _hasErrors = false;
 }
@@ -269,7 +292,7 @@ void WavReader::toMono()
     _format.numChannels = 1u;
 }
 
-const FormatSubChunk& WavReader::format()
+const FormatChunk &WavReader::format()
 {
     return _format;
 }
