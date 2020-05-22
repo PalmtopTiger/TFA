@@ -29,7 +29,6 @@
 #include <QClipboard>
 #include <QtMath>
 
-void StereoToMono(WavReader::SamplesVector& samples, const int numChannels);
 QString UrlToPath(const QUrl &url);
 
 const QString DEFAULT_DIR_KEY  = "DefaultDir",
@@ -152,12 +151,13 @@ void MainWindow::copyInfo()
 
 void MainWindow::openFile(const QString &fileName)
 {
-    this->_reader.open(fileName);
+    ui->tbInfo->setEnabled(false);
+    ui->btSave->setEnabled(false);
+    ui->tbInfo->clearContents();
+
+    _reader.open(fileName);
     if (_reader.hasErrors())
     {
-        ui->tbInfo->setEnabled(false);
-        ui->btSave->setEnabled(false);
-        ui->tbInfo->clearContents();
         return;
     }
     _fileInfo.setFile(fileName);
@@ -169,10 +169,10 @@ void MainWindow::openFile(const QString &fileName)
     ui->tbInfo->setItem(0, 0, new QTableWidgetItem(_fileInfo.fileName()));
     switch (format.audioFormat)
     {
-    case WavReader::FMT_INT:
+    case WavReader::PCM_INT:
         ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Integer PCM"));
         break;
-    case WavReader::FMT_FLOAT:
+    case WavReader::PCM_FLOAT:
         ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Float PCM"));
         break;
     default:
@@ -184,22 +184,18 @@ void MainWindow::openFile(const QString &fileName)
     ui->tbInfo->setItem(5, 0, new QTableWidgetItem(QString("%1 КГц").arg(format.sampleRate * 0.001)));
     ui->tbInfo->setItem(6, 0, new QTableWidgetItem(QString("%1 бит").arg(format.bitsPerSample)));
 
+    _reader.toMono();
+
     ui->tbInfo->setEnabled(true);
     ui->btSave->setEnabled(true);
 }
 
 void MainWindow::saveFile(const QString &fileName)
 {
-    const WavReader::FormatSubChunk& format = _reader.format();
-    WavReader::SamplesVector samples = _reader.samples();
-    if (format.numChannels > 1)
-    {
-        StereoToMono(samples, format.numChannels);
-    }
-
-    const qreal maxVol = *std::max_element(samples.constBegin(), samples.constEnd());
-    const qreal samplesInMsec = format.sampleRate * 0.001;
-    const qreal threshold = maxVol * ui->spinThreshold->value() * 0.01;
+    const WavReader::SamplesVector& samples = _reader.samples();
+//    const qreal threshold = *std::max_element(samples.constBegin(), samples.constEnd()) * ui->spinThreshold->value() * 0.01;
+    const qreal threshold = ui->spinThreshold->value() * 0.01;
+    const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
     const int minInterval = qRound(ui->spinMinInterval->value() * samplesInMsec);
     const int minLength = ui->spinMinLength->value();
     bool inPhrase = false;
@@ -251,15 +247,6 @@ void MainWindow::saveFile(const QString &fileName)
     writer.save(fileName);
 }
 
-
-void StereoToMono(WavReader::SamplesVector& samples, const int numChannels)
-{
-    for (int i = 0, j = 0, len = samples.size(); i < len; i += numChannels, ++j)
-    {
-        samples[j] = (samples[i] + samples[i + 1]) / 2.0;
-    }
-    samples.resize(samples.size() / numChannels);
-}
 
 QString UrlToPath(const QUrl &url)
 {

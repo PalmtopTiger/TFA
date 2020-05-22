@@ -54,8 +54,8 @@ const quint32 ID_RIFF   = 0x46464952u, // RIFF
               FMT_WAVE  = 0x45564157u, // WAVE
               ID_FORMAT = 0x20746D66u, // fmt_
               ID_DATA   = 0x61746164u; // data
-const quint16 FMT_INT   = 1u,
-              FMT_FLOAT = 3u;
+const quint16 PCM_INT   = 1u,
+              PCM_FLOAT = 3u;
 
 class WavReader
 {
@@ -69,6 +69,7 @@ public:
     void clear();
     void open(const QString& fileName);
     bool hasErrors();
+    void toMono();
     const FormatSubChunk& format();
     const SamplesVector& samples();
 };

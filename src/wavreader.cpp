@@ -38,10 +38,10 @@ WavReader::WavReader(const QString &fileName)
 
 void WavReader::clear()
 {
-    this->_hasErrors = true;
+    _hasErrors = true;
 
-    std::memset(&this->_format, 0, sizeof(FormatSubChunk));
-    this->_samples.clear();
+    std::memset(&_format, 0, sizeof(FormatSubChunk));
+    _samples.clear();
 }
 
 void WavReader::open(const QString &fileName)
@@ -131,7 +131,7 @@ void WavReader::open(const QString &fileName)
         return;
     }
 
-    std::memcpy(&(this->_format), format.constData(), sizeof(FormatSubChunk));
+    std::memcpy(&(_format), format.constData(), sizeof(FormatSubChunk));
 
     // Разбор секции DATA
     if (!subchunks.contains(ID_DATA))
@@ -148,18 +148,18 @@ void WavReader::open(const QString &fileName)
 
     QBuffer data(&subchunks[ID_DATA]);
     data.open(QIODevice::ReadOnly);
-    switch (this->_format.audioFormat)
+    switch (_format.audioFormat)
     {
-    case FMT_INT:
-        switch (this->_format.bitsPerSample)
+    case PCM_INT:
+        switch (_format.bitsPerSample)
         {
         case 32:
         {
-            this->_samples.reserve(static_cast<int>(data.size() / sizeof(qint32)));
+            _samples.reserve(static_cast<int>(data.size() / sizeof(qint32)));
             qint32 sample;
             while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint32)) == sizeof(qint32))
             {
-                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
             }
             break;
         }
@@ -167,35 +167,35 @@ void WavReader::open(const QString &fileName)
         case 24:
         {
             const int sampleSize = sizeof(qint32) - 1;
-            this->_samples.reserve(static_cast<int>(data.size() / sampleSize));
+            _samples.reserve(static_cast<int>(data.size() / sampleSize));
             qint32 sample = 0; // Зануление необходимо
             char* samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
             while (data.read(samplePtr, sampleSize) == sampleSize)
             {
-                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
             }
             break;
         }
 
         case 16:
         {
-            this->_samples.reserve(static_cast<int>(data.size() / sizeof(qint16)));
+            _samples.reserve(static_cast<int>(data.size() / sizeof(qint16)));
             qint16 sample;
             while (data.read(reinterpret_cast<char*>(&sample), sizeof(qint16)) == sizeof(qint16))
             {
-                this->_samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
+                _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
             }
             break;
         }
 
         case 8:
         {
-            this->_samples.reserve(static_cast<int>(data.size()));
+            _samples.reserve(static_cast<int>(data.size()));
             quint8 sample;
             while (data.read(reinterpret_cast<char*>(&sample), sizeof(quint8)) == sizeof(quint8))
             {
                 // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
-                this->_samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
+                _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
             }
             break;
         }
@@ -207,27 +207,27 @@ void WavReader::open(const QString &fileName)
         }
         break;
 
-    case FMT_FLOAT:
-        switch (this->_format.bitsPerSample)
+    case PCM_FLOAT:
+        switch (_format.bitsPerSample)
         {
         case 64:
         {
-            this->_samples.reserve(static_cast<int>(data.size() / sizeof(double)));
+            _samples.reserve(static_cast<int>(data.size() / sizeof(double)));
             double sample;
             while (data.read(reinterpret_cast<char*>(&sample), sizeof(double)) == sizeof(double))
             {
-                this->_samples.append(static_cast<qreal>(sample));
+                _samples.append(static_cast<qreal>(sample));
             }
             break;
         }
 
         case 32:
         {
-            this->_samples.reserve(static_cast<int>(data.size() / sizeof(float)));
+            _samples.reserve(static_cast<int>(data.size() / sizeof(float)));
             float sample;
             while (data.read(reinterpret_cast<char*>(&sample), sizeof(float)) == sizeof(float))
             {
-                this->_samples.append(static_cast<qreal>(sample));
+                _samples.append(static_cast<qreal>(sample));
             }
             break;
         }
@@ -246,21 +246,36 @@ void WavReader::open(const QString &fileName)
     }
     data.close();
 
-    this->_hasErrors = false;
+    _hasErrors = false;
 }
 
 bool WavReader::hasErrors()
 {
-    return this->_hasErrors;
+    return _hasErrors;
+}
+
+void WavReader::toMono()
+{
+    if (_format.numChannels < 2)
+    {
+        return;
+    }
+
+    for (int i = 0, j = 0, len = _samples.size(); i < len; i += _format.numChannels, ++j)
+    {
+        _samples[j] = (_samples[i] + _samples[i + 1]) / 2.0;
+    }
+    _samples.resize(_samples.size() / _format.numChannels);
+    _format.numChannels = 1u;
 }
 
 const FormatSubChunk& WavReader::format()
 {
-    return this->_format;
+    return _format;
 }
 
 const SamplesVector &WavReader::samples()
 {
-    return this->_samples;
+    return _samples;
 }
 }
