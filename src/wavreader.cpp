@@ -142,6 +142,9 @@ void WavReader::open(const QString &fileName)
                 return;
             }
 
+            const qint64 sampleSize = _format.bitsPerSample / 8;
+            _samples.reserve(header.size / sampleSize);
+
             switch (_format.audioFormat)
             {
             case PCM_INT:
@@ -149,8 +152,7 @@ void WavReader::open(const QString &fileName)
                 {
                 case 32:
                 {
-                    const qint64 sampleSize = sizeof(qint32);
-                    _samples.reserve(fin.size() / sampleSize);
+                    Q_ASSERT(sizeof(qint32) == sampleSize);
                     qint32 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -162,9 +164,8 @@ void WavReader::open(const QString &fileName)
 
                 case 24:
                 {
-                    const qint64 sampleSize = sizeof(qint32) - 1;
-                    _samples.reserve(fin.size() / sampleSize);
-                    qint32 sample = 0; // Зануление необходимо
+                    Q_ASSERT(sizeof(qint32) - 1 == sampleSize);
+                    qint32 sample = 0; // Зануляем первый байт
                     char* const samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(samplePtr, sampleSize) == sampleSize)
@@ -176,8 +177,7 @@ void WavReader::open(const QString &fileName)
 
                 case 16:
                 {
-                    const qint64 sampleSize = sizeof(qint16);
-                    _samples.reserve(fin.size() / sampleSize);
+                    Q_ASSERT(sizeof(qint16) == sampleSize);
                     qint16 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -189,8 +189,7 @@ void WavReader::open(const QString &fileName)
 
                 case 8:
                 {
-                    const qint64 sampleSize = sizeof(quint8);
-                    _samples.reserve(fin.size() / sampleSize);
+                    Q_ASSERT(sizeof(quint8) == sampleSize);
                     quint8 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -213,8 +212,7 @@ void WavReader::open(const QString &fileName)
                 {
                 case 64:
                 {
-                    const qint64 sampleSize = sizeof(double);
-                    _samples.reserve(fin.size() / sampleSize);
+                    Q_ASSERT(sizeof(double) == sampleSize);
                     double sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -226,8 +224,7 @@ void WavReader::open(const QString &fileName)
 
                 case 32:
                 {
-                    const qint64 sampleSize = sizeof(float);
-                    _samples.reserve(fin.size() / sampleSize);
+                    Q_ASSERT(sizeof(float) == sampleSize);
                     float sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
