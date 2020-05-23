@@ -148,11 +148,10 @@ void WavReader::open(const QString &fileName)
             switch (_format.audioFormat)
             {
             case PCM_INT:
-                switch (_format.bitsPerSample)
+                switch (sampleSize)
                 {
-                case 32:
+                case sizeof(qint32): // int32
                 {
-                    Q_ASSERT(sizeof(qint32) == sampleSize);
                     qint32 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -162,9 +161,8 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case 24:
+                case sizeof(qint32) - 1: // int24
                 {
-                    Q_ASSERT(sizeof(qint32) - 1 == sampleSize);
                     qint32 sample = 0; // Зануляем первый байт
                     char* const samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
                     while (chunkEnd - fin.pos() >= sampleSize &&
@@ -175,9 +173,8 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case 16:
+                case sizeof(qint16): // int16
                 {
-                    Q_ASSERT(sizeof(qint16) == sampleSize);
                     qint16 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -187,9 +184,8 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case 8:
+                case sizeof(quint8): // uint8
                 {
-                    Q_ASSERT(sizeof(quint8) == sampleSize);
                     quint8 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -208,11 +204,10 @@ void WavReader::open(const QString &fileName)
                 break;
 
             case PCM_FLOAT:
-                switch (_format.bitsPerSample)
+                switch (sampleSize)
                 {
-                case 64:
+                case sizeof(double): // float64
                 {
-                    Q_ASSERT(sizeof(double) == sampleSize);
                     double sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
@@ -222,9 +217,8 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case 32:
+                case sizeof(float): // float32
                 {
-                    Q_ASSERT(sizeof(float) == sampleSize);
                     float sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
