@@ -150,13 +150,25 @@ void WavReader::open(const QString &fileName)
             case PCM_INT:
                 switch (sampleSize)
                 {
-                case sizeof(qint32): // int32
+                case sizeof(quint8): // uint8
                 {
-                    qint32 sample;
+                    quint8 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
-                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                        // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
+                        _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
+                    }
+                    break;
+                }
+
+                case sizeof(qint16): // int16
+                {
+                    qint16 sample;
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
+                    {
+                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
                     }
                     break;
                 }
@@ -173,25 +185,13 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case sizeof(qint16): // int16
+                case sizeof(qint32): // int32
                 {
-                    qint16 sample;
+                    qint32 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
-                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
-                    }
-                    break;
-                }
-
-                case sizeof(quint8): // uint8
-                {
-                    quint8 sample;
-                    while (chunkEnd - fin.pos() >= sampleSize &&
-                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
-                    {
-                        // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
-                        _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
+                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
                     }
                     break;
                 }
@@ -206,9 +206,9 @@ void WavReader::open(const QString &fileName)
             case PCM_FLOAT:
                 switch (sampleSize)
                 {
-                case sizeof(double): // float64
+                case sizeof(float): // float32
                 {
-                    double sample;
+                    float sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
@@ -217,9 +217,9 @@ void WavReader::open(const QString &fileName)
                     break;
                 }
 
-                case sizeof(float): // float32
+                case sizeof(double): // float64
                 {
-                    float sample;
+                    double sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
