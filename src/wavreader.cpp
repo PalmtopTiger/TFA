@@ -52,12 +52,6 @@ void WavReader::open(const QString &fileName)
         QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для чтения.");
         return;
     }
-    if (static_cast<size_t>(fin.size()) < (sizeof(ChunkHeader) * 3 + sizeof(quint32) + sizeof(FormatChunk)))
-    {
-        fin.close();
-        QMessageBox::critical(nullptr, "Ошибка", "Файл подозрительно мал.");
-        return;
-    }
 
     // Чтение заголовка
     ChunkHeader header;
@@ -113,6 +107,7 @@ void WavReader::open(const QString &fileName)
             QMessageBox::critical(nullptr, "Ошибка", "Указанный размер секции больше, чем осталось до конца файла.");
             return;
         }
+        chunkEnd = fin.pos() + header.size;
 
         // Разбор секций
         switch (header.id)
@@ -121,6 +116,7 @@ void WavReader::open(const QString &fileName)
             if (hasFormat)
             {
                 QMessageBox::warning(nullptr, "Предупреждение", "Повторяющаяся секция FORMAT");
+                break;
             }
 
             if (fin.read(reinterpret_cast<char*>(&_format), sizeof(FormatChunk)) != sizeof(FormatChunk))
@@ -136,6 +132,7 @@ void WavReader::open(const QString &fileName)
             if (hasData)
             {
                 QMessageBox::warning(nullptr, "Предупреждение", "Повторяющаяся секция DATA");
+                break;
             }
 
             if (!hasFormat)
@@ -145,8 +142,6 @@ void WavReader::open(const QString &fileName)
                 return;
             }
 
-            chunkEnd = fin.pos() + header.size;
-
             switch (_format.audioFormat)
             {
             case PCM_INT:
@@ -154,10 +149,11 @@ void WavReader::open(const QString &fileName)
                 {
                 case 32:
                 {
-                    _samples.reserve(static_cast<int>(fin.size() / sizeof(qint32)));
+                    const qint64 sampleSize = sizeof(qint32);
+                    _samples.reserve(fin.size() / sampleSize);
                     qint32 sample;
-                    while (fin.pos() < chunkEnd &&
-                           fin.read(reinterpret_cast<char*>(&sample), sizeof(qint32)) == sizeof(qint32))
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
                         _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
                     }
@@ -167,10 +163,10 @@ void WavReader::open(const QString &fileName)
                 case 24:
                 {
                     const qint64 sampleSize = sizeof(qint32) - 1;
-                    _samples.reserve(static_cast<int>(fin.size() / sampleSize));
+                    _samples.reserve(fin.size() / sampleSize);
                     qint32 sample = 0; // Зануление необходимо
-                    char* samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
-                    while (fin.pos() < chunkEnd &&
+                    char* const samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
+                    while (chunkEnd - fin.pos() >= sampleSize &&
                            fin.read(samplePtr, sampleSize) == sampleSize)
                     {
                         _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
@@ -180,10 +176,11 @@ void WavReader::open(const QString &fileName)
 
                 case 16:
                 {
-                    _samples.reserve(static_cast<int>(fin.size() / sizeof(qint16)));
+                    const qint64 sampleSize = sizeof(qint16);
+                    _samples.reserve(fin.size() / sampleSize);
                     qint16 sample;
-                    while (fin.pos() < chunkEnd &&
-                           fin.read(reinterpret_cast<char*>(&sample), sizeof(qint16)) == sizeof(qint16))
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
                         _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint16>::max());
                     }
@@ -192,10 +189,11 @@ void WavReader::open(const QString &fileName)
 
                 case 8:
                 {
-                    _samples.reserve(static_cast<int>(fin.size()));
+                    const qint64 sampleSize = sizeof(quint8);
+                    _samples.reserve(fin.size() / sampleSize);
                     quint8 sample;
-                    while (fin.pos() < chunkEnd &&
-                           fin.read(reinterpret_cast<char*>(&sample), sizeof(quint8)) == sizeof(quint8))
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
                         // 128 в 8-битных WAV означает 0; qint8 - не ошибка, т.к. приводим к знаковому типу
                         _samples.append((static_cast<qreal>(sample) - 128.0) / std::numeric_limits<qint8>::max());
@@ -215,10 +213,11 @@ void WavReader::open(const QString &fileName)
                 {
                 case 64:
                 {
-                    _samples.reserve(static_cast<int>(fin.size() / sizeof(double)));
+                    const qint64 sampleSize = sizeof(double);
+                    _samples.reserve(fin.size() / sampleSize);
                     double sample;
-                    while (fin.pos() < chunkEnd &&
-                           fin.read(reinterpret_cast<char*>(&sample), sizeof(double)) == sizeof(double))
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
                         _samples.append(static_cast<qreal>(sample));
                     }
@@ -227,10 +226,11 @@ void WavReader::open(const QString &fileName)
 
                 case 32:
                 {
-                    _samples.reserve(static_cast<int>(fin.size() / sizeof(float)));
+                    const qint64 sampleSize = sizeof(float);
+                    _samples.reserve(fin.size() / sampleSize);
                     float sample;
-                    while (fin.pos() < chunkEnd &&
-                           fin.read(reinterpret_cast<char*>(&sample), sizeof(float)) == sizeof(float))
+                    while (chunkEnd - fin.pos() >= sampleSize &&
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
                         _samples.append(static_cast<qreal>(sample));
                     }
@@ -251,14 +251,14 @@ void WavReader::open(const QString &fileName)
             }
             hasData = true;
             break;
+        }
 
-        default:
-            if (fin.skip(header.size) != header.size)
-            {
-                fin.close();
-                QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
-                return;
-            }
+        // Переходим на конец секции (например, FORMAT_EX)
+        if (!fin.seek(chunkEnd))
+        {
+            fin.close();
+            QMessageBox::critical(nullptr, "Ошибка", "Ошибка чтения.");
+            return;
         }
     }
     fin.close();
