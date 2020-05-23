@@ -175,12 +175,12 @@ void WavReader::open(const QString &fileName)
 
                 case sizeof(qint32) - 1: // int24
                 {
-                    qint32 sample = 0; // Зануляем первый байт
-                    char* const samplePtr = reinterpret_cast<char*>(&sample) + 1; // Знаковый бит попадает куда нужно
+                    qint32 sample;
                     while (chunkEnd - fin.pos() >= sampleSize &&
-                           fin.read(samplePtr, sampleSize) == sampleSize)
+                           fin.read(reinterpret_cast<char*>(&sample), sampleSize) == sampleSize)
                     {
-                        _samples.append(static_cast<qreal>(sample) / std::numeric_limits<qint32>::max());
+                        // Приводим к 32 битам, знаковый бит попадёт куда нужно
+                        _samples.append(static_cast<qreal>(sample << 8) / std::numeric_limits<qint32>::max());
                     }
                     break;
                 }
