@@ -19,7 +19,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "srtwriter.h"
-#include <QDesktopWidget>
+#include <QStyle>
+#include <QScreen>
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QUrl>
@@ -60,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
     ui->spinMinLength->setValue(_settings.value(MIN_LENGTH_KEY, ui->spinMinLength->value()).toInt());
 
-    this->move(QApplication::desktop()->screenGeometry().center() - this->rect().center());
+    this->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, this->size(), qApp->primaryScreen()->availableGeometry()));
 }
 
 MainWindow::~MainWindow()
@@ -256,5 +257,5 @@ QString UrlToPath(const QUrl &url)
             return path;
         }
     }
-    return QString::null;
+    return QString();
 }
