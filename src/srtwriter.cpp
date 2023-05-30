@@ -45,13 +45,13 @@ void SrtWriter::save(const QString& fileName)
         return;
     }
     QTextStream out(&fout);
-    out.setCodec("UTF-8");
+
     out.setGenerateByteOrderMark(true);
 
     uint num = 1;
     for (const Phrase& p : qAsConst(_phrases))
     {
-        out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first)).arg(ToTimestamp(p.time.second)).arg(p.text);
+        out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first), ToTimestamp(p.time.second), p.text);
         ++num;
     }
 

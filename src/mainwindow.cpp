@@ -142,9 +142,7 @@ void MainWindow::copyInfo()
 {
     QStringList data;
     for (int i = 0; i < ui->tbInfo->rowCount(); ++i) {
-        data.append(QString("%1: %2")
-                    .arg(ui->tbInfo->verticalHeaderItem(i)->text())
-                    .arg(ui->tbInfo->item(i, 0)->text()));
+        data.append(QString("%1: %2").arg(ui->tbInfo->verticalHeaderItem(i)->text(), ui->tbInfo->item(i, 0)->text()));
     }
 
     QApplication::clipboard()->setText(data.join('\n'));
@@ -165,7 +163,7 @@ void MainWindow::openFile(const QString &fileName)
 
     const WavReader::FormatChunk& format = _reader.format();
     QDateTime dt;
-    dt.setTime_t(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
+    dt.setSecsSinceEpoch(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
 
     ui->tbInfo->setItem(0, 0, new QTableWidgetItem(_fileInfo.fileName()));
     switch (format.audioFormat)
