@@ -39,7 +39,7 @@ struct FormatChunk
     quint16 blockAlign;
     quint16 bitsPerSample;
 };
-#pragma pack (pop)
+#pragma pack(pop)
 
 typedef QVector<qreal> SamplesVector;
 

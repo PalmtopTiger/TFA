@@ -39,8 +39,7 @@ void SrtWriter::addPhrase(const Phrase& phrase)
 void SrtWriter::save(const QString& fileName)
 {
     QFile fout(fileName);
-    if (!fout.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
+    if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для записи.");
         return;
     }
@@ -49,8 +48,7 @@ void SrtWriter::save(const QString& fileName)
     out.setGenerateByteOrderMark(true);
 
     uint num = 1;
-    for (const Phrase& p : qAsConst(_phrases))
-    {
+    for (const Phrase& p : qAsConst(_phrases)) {
         out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first), ToTimestamp(p.time.second), p.text);
         ++num;
     }

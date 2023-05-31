@@ -68,16 +68,14 @@ MainWindow::~MainWindow()
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasUrls() && !urlToPath(event->mimeData()->urls().first()).isEmpty())
-    {
+    if (event->mimeData()->hasUrls() && !urlToPath(event->mimeData()->urls().first()).isEmpty()) {
         event->acceptProposedAction();
     }
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    if (event->mimeData()->hasUrls())
-    {
+    if (event->mimeData()->hasUrls()) {
         const QString path = urlToPath(event->mimeData()->urls().first());
         if (!path.isEmpty()) {
             openFile(path);
@@ -93,7 +91,9 @@ void MainWindow::on_btOpen_clicked()
                                                           "Выберите аудио",
                                                           _settings.value(DEFAULT_DIR_KEY).toString(),
                                                           "Microsoft WAV (*.wav)");
-    if (fileName.isEmpty()) return;
+    if (fileName.isEmpty()) {
+        return;
+    }
 
     _settings.setValue(DEFAULT_DIR_KEY, QFileInfo(fileName).absolutePath());
     openFile(fileName);
@@ -101,13 +101,17 @@ void MainWindow::on_btOpen_clicked()
 
 void MainWindow::on_btSave_clicked()
 {
-    if (_reader.hasErrors()) return;
+    if (_reader.hasErrors()) {
+        return;
+    }
 
     const QString fileName = QFileDialog::getSaveFileName(this,
                                                           "Выберите выходной файл",
                                                           _fileInfo.dir().filePath(_fileInfo.completeBaseName() + ".srt"),
                                                           "SubRip (*.srt)");
-    if (fileName.isEmpty()) return;
+    if (fileName.isEmpty()) {
+        return;
+    }
 
     saveFile(fileName);
 }
@@ -148,13 +152,12 @@ void MainWindow::openFile(const QString &fileName)
     ui->tbInfo->clearContents();
 
     _reader.open(fileName);
-    if (_reader.hasErrors())
-    {
+    if (_reader.hasErrors()) {
         return;
     }
     _fileInfo.setFile(fileName);
 
-    const WavReader::FormatChunk& format = _reader.format();
+    const WavReader::FormatChunk &format = _reader.format();
     QDateTime dt;
     dt.setSecsSinceEpoch(static_cast<uint>(_reader.samples().size()) / format.sampleRate / format.numChannels + 61200u);
 
@@ -164,9 +167,11 @@ void MainWindow::openFile(const QString &fileName)
     case WavReader::PCM_INT:
         ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Integer PCM"));
         break;
+
     case WavReader::PCM_FLOAT:
         ui->tbInfo->setItem(1, 0, new QTableWidgetItem("Float PCM"));
         break;
+
     default:
         ui->tbInfo->setItem(1, 0, new QTableWidgetItem("неизвестен"));
     }
@@ -184,7 +189,7 @@ void MainWindow::openFile(const QString &fileName)
 
 void MainWindow::saveFile(const QString &fileName)
 {
-    const WavReader::SamplesVector& samples = _reader.samples();
+    const WavReader::SamplesVector &samples = _reader.samples();
 //    const qreal threshold = *std::max_element(samples.constBegin(), samples.constEnd()) * ui->spinThreshold->value() * 0.01;
     const qreal threshold = ui->spinThreshold->value() * 0.01;
     const qreal samplesInMsec = _reader.format().sampleRate * 0.001;
@@ -195,28 +200,20 @@ void MainWindow::saveFile(const QString &fileName)
     uint lastSeenTime = 0, num = 1;
     SrtWriter::Phrase phrase;
     SrtWriter::SrtWriter writer;
-    for (int i = 0, len = samples.size(); i < len; ++i)
-    {
-        if (qAbs(samples.at(i)) >= threshold)
-        {
+    for (int i = 0, len = samples.size(); i < len; ++i) {
+        if (qAbs(samples.at(i)) >= threshold) {
             lastSeenTime = static_cast<uint>(qRound(i / samplesInMsec));
             countdown = minInterval;
 
-            if (!inPhrase)
-            {
+            if (!inPhrase) {
                 inPhrase = true;
                 phrase.time.first = lastSeenTime;
                 phrase.text = QString::number(num);
             }
-        }
-        else if (inPhrase)
-        {
-            if (countdown > 0)
-            {
+        } else if (inPhrase) {
+            if (countdown > 0) {
                 --countdown;
-            }
-            else
-            {
+            } else {
                 inPhrase = false;
                 phrase.time.second = lastSeenTime + 1;
                 if (static_cast<int>(phrase.time.second) - static_cast<int>(phrase.time.first) >= minLength)
@@ -227,11 +224,10 @@ void MainWindow::saveFile(const QString &fileName)
             }
         }
     }
-    if (inPhrase)
-    {
+
+    if (inPhrase) {
         phrase.time.second = lastSeenTime + 1;
-        if (static_cast<int>(phrase.time.second) - static_cast<int>(phrase.time.first) >= minLength)
-        {
+        if (static_cast<int>(phrase.time.second) - static_cast<int>(phrase.time.first) >= minLength) {
             writer.addPhrase(phrase);
         }
     }
