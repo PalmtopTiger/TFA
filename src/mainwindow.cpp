@@ -28,7 +28,6 @@
 #include <QDateTime>
 #include <QMenu>
 #include <QClipboard>
-#include <QtMath>
 
 
 MainWindow::MainWindow(QWidget *parent) :

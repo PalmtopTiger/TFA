@@ -19,7 +19,6 @@
 #include "wavreader.h"
 #include <QMessageBox>
 #include <QFile>
-#include <cstring>
 
 namespace WavReader
 {
