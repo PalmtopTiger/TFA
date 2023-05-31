@@ -39,8 +39,8 @@ public:
 private slots:
     void on_btOpen_clicked();
     void on_btSave_clicked();
-    void on_tbInfo_customContextMenuRequested(const QPoint& pos);
-    void on_tbInfo_customHeaderContextMenuRequested(const QPoint& pos);
+    void on_tbInfo_customContextMenuRequested(const QPoint &pos);
+    void tbInfoCustomHeaderContextMenuRequested(const QPoint &pos);
     void copyInfo();
 
 private:

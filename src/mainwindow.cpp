@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     ui->tbInfo->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tbInfo->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->tbInfo->verticalHeader(), &QHeaderView::customContextMenuRequested, this, &MainWindow::on_tbInfo_customHeaderContextMenuRequested);
+    connect(ui->tbInfo->verticalHeader(), &QHeaderView::customContextMenuRequested, this, &MainWindow::tbInfoCustomHeaderContextMenuRequested);
 
     ui->spinThreshold->setValue(_settings.value(THRESHOLD_KEY, ui->spinThreshold->value()).toDouble());
     ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
@@ -112,12 +112,12 @@ void MainWindow::on_btSave_clicked()
     saveFile(fileName);
 }
 
-void MainWindow::on_tbInfo_customContextMenuRequested(const QPoint& pos)
+void MainWindow::on_tbInfo_customContextMenuRequested(const QPoint &pos)
 {
     createContextMenu()->popup(ui->tbInfo->viewport()->mapToGlobal(pos));
 }
 
-void MainWindow::on_tbInfo_customHeaderContextMenuRequested(const QPoint& pos)
+void MainWindow::tbInfoCustomHeaderContextMenuRequested(const QPoint &pos)
 {
     createContextMenu()->popup(ui->tbInfo->verticalHeader()->viewport()->mapToGlobal(pos));
 }
