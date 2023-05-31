@@ -1,6 +1,6 @@
 /*
  * This file is part of TFA.
- * Copyright (C) 2013-2019  Andrey Efremov <duxus@yandex.ru>
+ * Copyright (C) 2013-2023  Andrey Efremov <duxus@yandex.ru>
  *
  * TFA is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
