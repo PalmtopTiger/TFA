@@ -44,6 +44,11 @@ private slots:
     void copyInfo();
 
 private:
+    const QString DEFAULT_DIR_KEY  = "DefaultDir",
+                  THRESHOLD_KEY    = "Threshold",
+                  MIN_INTERVAL_KEY = "MinInterval",
+                  MIN_LENGTH_KEY   = "MinLength";
+
     Ui::MainWindow *ui;
     QSettings _settings;
     QFileInfo _fileInfo;
@@ -54,6 +59,7 @@ private:
     QMenu* createContextMenu();
     void openFile(const QString &fileName);
     void saveFile(const QString &fileName);
+    QString urlToPath(const QUrl &url);
 };
 
 #endif // MAINWINDOW_H

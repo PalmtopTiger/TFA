@@ -25,12 +25,12 @@ namespace WavReader
 {
 WavReader::WavReader()
 {
-    this->clear();
+    clear();
 }
 
 WavReader::WavReader(const QString &fileName)
 {
-    this->open(fileName);
+    open(fileName);
 }
 
 void WavReader::clear()
@@ -43,7 +43,7 @@ void WavReader::clear()
 
 void WavReader::open(const QString &fileName)
 {
-    this->clear();
+    clear();
 
     // Открытие файла
     QFile fin(fileName);

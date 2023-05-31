@@ -30,13 +30,6 @@
 #include <QClipboard>
 #include <QtMath>
 
-QString UrlToPath(const QUrl &url);
-
-const QString DEFAULT_DIR_KEY  = "DefaultDir",
-              THRESHOLD_KEY    = "Threshold",
-              MIN_INTERVAL_KEY = "MinInterval",
-              MIN_LENGTH_KEY   = "MinLength";
-
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -61,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->spinMinInterval->setValue(_settings.value(MIN_INTERVAL_KEY, ui->spinMinInterval->value()).toInt());
     ui->spinMinLength->setValue(_settings.value(MIN_LENGTH_KEY, ui->spinMinLength->value()).toInt());
 
-    this->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, this->size(), qApp->primaryScreen()->availableGeometry()));
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(), qApp->primaryScreen()->availableGeometry()));
 }
 
 MainWindow::~MainWindow()
@@ -75,7 +68,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasUrls() && !UrlToPath(event->mimeData()->urls().first()).isEmpty())
+    if (event->mimeData()->hasUrls() && !urlToPath(event->mimeData()->urls().first()).isEmpty())
     {
         event->acceptProposedAction();
     }
@@ -85,9 +78,9 @@ void MainWindow::dropEvent(QDropEvent *event)
 {
     if (event->mimeData()->hasUrls())
     {
-        QString path = UrlToPath(event->mimeData()->urls().first());
+        const QString path = urlToPath(event->mimeData()->urls().first());
         if (!path.isEmpty()) {
-            this->openFile(path);
+            openFile(path);
             event->acceptProposedAction();
         }
     }
@@ -103,7 +96,7 @@ void MainWindow::on_btOpen_clicked()
     if (fileName.isEmpty()) return;
 
     _settings.setValue(DEFAULT_DIR_KEY, QFileInfo(fileName).absolutePath());
-    this->openFile(fileName);
+    openFile(fileName);
 }
 
 void MainWindow::on_btSave_clicked()
@@ -116,17 +109,17 @@ void MainWindow::on_btSave_clicked()
                                                           "SubRip (*.srt)");
     if (fileName.isEmpty()) return;
 
-    this->saveFile(fileName);
+    saveFile(fileName);
 }
 
 void MainWindow::on_tbInfo_customContextMenuRequested(const QPoint& pos)
 {
-    this->createContextMenu()->popup(ui->tbInfo->viewport()->mapToGlobal(pos));
+    createContextMenu()->popup(ui->tbInfo->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::on_tbInfo_customHeaderContextMenuRequested(const QPoint& pos)
 {
-    this->createContextMenu()->popup(ui->tbInfo->verticalHeader()->viewport()->mapToGlobal(pos));
+    createContextMenu()->popup(ui->tbInfo->verticalHeader()->viewport()->mapToGlobal(pos));
 }
 
 QMenu* MainWindow::createContextMenu()
@@ -246,8 +239,7 @@ void MainWindow::saveFile(const QString &fileName)
     writer.save(fileName);
 }
 
-
-QString UrlToPath(const QUrl &url)
+QString MainWindow::urlToPath(const QUrl &url)
 {
     if (url.isLocalFile()) {
         const QString path = url.toLocalFile();
