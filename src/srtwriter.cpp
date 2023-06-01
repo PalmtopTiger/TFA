@@ -31,12 +31,12 @@ QString ToTimestamp(const uint utime)
     return dt.toString("HH:mm:ss,zzz");
 }
 
-void SrtWriter::addPhrase(const Phrase& phrase)
+void SrtWriter::addPhrase(const Phrase &phrase)
 {
     _phrases.append(phrase);
 }
 
-void SrtWriter::save(const QString& fileName)
+void SrtWriter::save(const QString &fileName)
 {
     QFile fout(fileName);
     if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -48,7 +48,7 @@ void SrtWriter::save(const QString& fileName)
     out.setGenerateByteOrderMark(true);
 
     uint num = 1;
-    for (const Phrase& p : qAsConst(_phrases)) {
+    for (const Phrase &p : qAsConst(_phrases)) {
         out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first), ToTimestamp(p.time.second), p.text);
         ++num;
     }

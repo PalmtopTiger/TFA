@@ -188,7 +188,7 @@ void MainWindow::openFile(const QString &fileName)
 
 void MainWindow::saveFile(const QString &fileName)
 {
-    const WavReader::SamplesVector &samples = _reader.samples();
+    const WavReader::SamplesList &samples = _reader.samples();
 //    const qreal threshold = *std::max_element(samples.constBegin(), samples.constEnd()) * ui->spinThreshold->value() * 0.01;
     const qreal threshold = ui->spinThreshold->value() * 0.01;
     const qreal samplesInMsec = _reader.format().sampleRate * 0.001;

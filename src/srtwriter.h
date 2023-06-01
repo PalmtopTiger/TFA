@@ -38,8 +38,8 @@ class SrtWriter
     PhraseList _phrases;
 
 public:
-    void addPhrase(const Phrase& phrase);
-    void save(const QString& fileName);
+    void addPhrase(const Phrase &phrase);
+    void save(const QString &fileName);
 };
 }
 

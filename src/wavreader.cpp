@@ -279,7 +279,7 @@ const FormatChunk &WavReader::format()
     return _format;
 }
 
-const SamplesVector &WavReader::samples()
+const SamplesList &WavReader::samples()
 {
     return _samples;
 }

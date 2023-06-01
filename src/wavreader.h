@@ -20,7 +20,7 @@
 #define WAVREADER_H
 
 #include <QString>
-#include <QVector>
+#include <QList>
 
 namespace WavReader
 {
@@ -41,7 +41,7 @@ struct FormatChunk
 };
 #pragma pack(pop)
 
-typedef QVector<qreal> SamplesVector;
+typedef QList<qreal> SamplesList;
 
 // Little-endian
 const quint32 ID_RIFF   = 0x46464952u, // RIFF
@@ -54,18 +54,18 @@ const quint16 PCM_INT   = 1u,
 class WavReader
 {
     FormatChunk _format;
-    SamplesVector _samples;
+    SamplesList _samples;
     bool _hasErrors;
 
 public:
     WavReader();
-    WavReader(const QString& fileName);
+    WavReader(const QString &fileName);
     void clear();
-    void open(const QString& fileName);
+    void open(const QString &fileName);
     bool hasErrors();
     void toMono();
-    const FormatChunk& format();
-    const SamplesVector& samples();
+    const FormatChunk &format();
+    const SamplesList &samples();
 };
 }
 
