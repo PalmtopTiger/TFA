@@ -58,8 +58,9 @@ class WavReader
     bool _hasErrors;
 
 public:
-    WavReader();
-    WavReader(const QString &fileName);
+    explicit WavReader();
+    explicit WavReader(const QString &fileName);
+
     void clear();
     void open(const QString &fileName);
     bool hasErrors();
