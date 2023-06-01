@@ -67,15 +67,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasUrls() && !urlToPath(event->mimeData()->urls().first()).isEmpty()) {
+    const QMimeData &mimeData = *event->mimeData();
+    if (mimeData.hasUrls() && !urlToPath(mimeData.urls().at(0)).isEmpty()) {
         event->acceptProposedAction();
     }
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    if (event->mimeData()->hasUrls()) {
-        const QString path = urlToPath(event->mimeData()->urls().first());
+    const QMimeData &mimeData = *event->mimeData();
+    if (mimeData.hasUrls()) {
+        const QString path = urlToPath(mimeData.urls().at(0));
         if (!path.isEmpty()) {
             openFile(path);
             event->acceptProposedAction();
