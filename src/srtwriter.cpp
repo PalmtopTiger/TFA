@@ -36,12 +36,12 @@ void SrtWriter::addPhrase(const Phrase &phrase)
     _phrases.append(phrase);
 }
 
-void SrtWriter::save(const QString &fileName)
+bool SrtWriter::save(const QString &fileName)
 {
     QFile fout(fileName);
     if (!fout.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "Ошибка", "Не могу открыть файл для записи.");
-        return;
+        return false;
     }
     QTextStream out(&fout);
 
@@ -54,5 +54,6 @@ void SrtWriter::save(const QString &fileName)
     }
 
     fout.close();
+    return true;
 }
 }

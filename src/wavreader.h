@@ -55,15 +55,14 @@ class WavReader
 {
     FormatChunk _format;
     SamplesList _samples;
-    bool _hasErrors;
 
 public:
     explicit WavReader();
     explicit WavReader(const QString &fileName);
 
     void clear();
-    void open(const QString &fileName);
-    bool hasErrors();
+    bool load(const QString &fileName);
+    bool isEmpty() const;
     void toMono();
     const FormatChunk &format();
     const SamplesList &samples();

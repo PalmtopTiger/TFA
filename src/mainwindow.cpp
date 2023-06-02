@@ -102,10 +102,6 @@ void MainWindow::on_btOpen_clicked()
 
 void MainWindow::on_btSave_clicked()
 {
-    if (_reader.hasErrors()) {
-        return;
-    }
-
     const QString fileName = QFileDialog::getSaveFileName(this,
                                                           "Выберите выходной файл",
                                                           _fileInfo.dir().filePath(_fileInfo.completeBaseName() + ".srt"),
@@ -152,8 +148,7 @@ void MainWindow::openFile(const QString &fileName)
     ui->btSave->setEnabled(false);
     ui->tbInfo->clearContents();
 
-    _reader.open(fileName);
-    if (_reader.hasErrors()) {
+    if (!_reader.load(fileName)) {
         return;
     }
     _fileInfo.setFile(fileName);

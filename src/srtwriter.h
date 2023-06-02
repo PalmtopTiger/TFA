@@ -39,7 +39,7 @@ class SrtWriter
 
 public:
     void addPhrase(const Phrase &phrase);
-    void save(const QString &fileName);
+    bool save(const QString &fileName);
 };
 }
 
