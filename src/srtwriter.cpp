@@ -48,7 +48,7 @@ bool SrtWriter::save(const QString &fileName)
     out.setGenerateByteOrderMark(true);
 
     uint num = 1;
-    for (const Phrase &p : qAsConst(_phrases)) {
+    for (const Phrase &p : std::as_const(_phrases)) {
         out << QString("%1\n%2 --> %3\n%4\n\n").arg(num).arg(ToTimestamp(p.time.first), ToTimestamp(p.time.second), p.text);
         ++num;
     }
