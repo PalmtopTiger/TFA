@@ -65,6 +65,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::processCommandLine(const QStringList &args)
+{
+    if (!args.isEmpty()) {
+        openFile(args[0]);
+    }
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     const QMimeData &mimeData = *event->mimeData();
@@ -77,14 +84,12 @@ void MainWindow::dropEvent(QDropEvent *event)
 {
     const QMimeData &mimeData = *event->mimeData();
     if (mimeData.hasUrls()) {
-        const QString path = urlToPath(mimeData.urls().at(0));
-        if (!path.isEmpty()) {
-            openFile(path);
+        const QString &fileName = urlToPath(mimeData.urls().at(0));
+        if (openFile(fileName)) {
             event->acceptProposedAction();
         }
     }
 }
-
 
 void MainWindow::on_btOpen_clicked()
 {
@@ -142,15 +147,16 @@ void MainWindow::copyInfo()
     QApplication::clipboard()->setText(data.join('\n'));
 }
 
-void MainWindow::openFile(const QString &fileName)
+bool MainWindow::openFile(const QString &fileName)
 {
     ui->tbInfo->setEnabled(false);
     ui->btSave->setEnabled(false);
     ui->tbInfo->clearContents();
 
-    if (!_reader.load(fileName)) {
-        return;
+    if (fileName.isEmpty() || !_reader.load(fileName)) {
+        return false;
     }
+
     _fileInfo.setFile(fileName);
 
     const WavReader::FormatChunk &format = _reader.format();
@@ -181,9 +187,11 @@ void MainWindow::openFile(const QString &fileName)
 
     ui->tbInfo->setEnabled(true);
     ui->btSave->setEnabled(true);
+
+    return true;
 }
 
-void MainWindow::saveFile(const QString &fileName)
+bool MainWindow::saveFile(const QString &fileName)
 {
     const WavReader::SamplesList &samples = _reader.samples();
 //    const qreal threshold = *std::max_element(samples.constBegin(), samples.constEnd()) * ui->spinThreshold->value() * 0.01;
@@ -228,13 +236,13 @@ void MainWindow::saveFile(const QString &fileName)
         }
     }
 
-    writer.save(fileName);
+    return writer.save(fileName);
 }
 
 QString MainWindow::urlToPath(const QUrl &url)
 {
     if (url.isLocalFile()) {
-        const QString path = url.toLocalFile();
+        const QString &path = url.toLocalFile();
         if (QFileInfo(path).suffix().toLower() == "wav") {
             return path;
         }

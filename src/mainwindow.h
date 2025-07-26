@@ -35,6 +35,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void processCommandLine(const QStringList &args);
 
 private slots:
     void on_btOpen_clicked();
@@ -57,8 +58,8 @@ private:
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
     QMenu* createContextMenu();
-    void openFile(const QString &fileName);
-    void saveFile(const QString &fileName);
+    bool openFile(const QString &fileName);
+    bool saveFile(const QString &fileName);
     QString urlToPath(const QUrl &url);
 };
 
